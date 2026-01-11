@@ -1,39 +1,18 @@
 use std::sync::Arc;
 
+#[allow(unused)]
 pub type MathFn = fn(f64) -> f64;
 pub type DynMathFn = dyn Fn(f64) -> f64;
 pub type BackwardResult = (f64, Box<DynMathFn>);
 
 pub type BackwardResultArc = (f64, Arc<DynMathFn>);
 
+#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MathOp {
     Sin,
     Cos,
     Exp,
-}
-
-/// Macro to convert function names to MathOp enum at compile time.
-/// This avoids the function pointer comparison issue across library boundaries.
-///
-/// # Example
-/// ```
-/// use autodiff::{compute, math_ops};
-///
-/// let (value, backprop) = compute(math_ops![sin, sin, exp], 2.0);
-/// ```
-///
-#[macro_export]
-macro_rules! math_ops {
-    (@one sin) => { $crate::MathOp::Sin };
-    (@one cos) => { $crate::MathOp::Cos };
-    (@one exp) => { $crate::MathOp::Exp };
-    (@one $x:ident) => {
-        compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, or exp"))
-    };
-    ($($x:ident),* $(,)?) => {
-        [$($crate::math_ops!(@one $x)),*]
-    };
 }
 
 impl MathOp {
@@ -75,5 +54,51 @@ impl MathOp {
                 (y, Arc::new(grad))
             }
         }
+    }
+
+    pub fn compute(exprs: &[MathOp], x: f64) -> BackwardResult {
+        let mut value = x;
+        let mut backprops = Vec::new();
+
+        // Compute backward pass for each operation
+        for &op in exprs {
+            let (new_value, backprop) = op.backward(value);
+            value = new_value;
+            backprops.push(backprop);
+        }
+
+        // Chain all the backward functions
+        let backward_fn = move |cotangent: f64| -> f64 {
+            let mut grad = cotangent;
+            for backprop in backprops.iter().rev() {
+                grad = backprop(grad);
+            }
+            grad
+        };
+
+        (value, Box::new(backward_fn))
+    }
+
+    pub fn compute_arc(exprs: &[MathOp], x: f64) -> BackwardResultArc {
+        let mut value = x;
+        let mut backprops = Vec::new();
+
+        // Compute backward pass for each operation
+        for &op in exprs {
+            let (new_value, backprop) = op.backward_arc(value);
+            value = new_value;
+            backprops.push(backprop);
+        }
+
+        // Chain all the backward functions
+        let backward_fn = move |cotangent: f64| -> f64 {
+            let mut grad = cotangent;
+            for backprop in backprops.iter().rev() {
+                grad = backprop(grad);
+            }
+            grad
+        };
+
+        (value, Arc::new(backward_fn))
     }
 }
