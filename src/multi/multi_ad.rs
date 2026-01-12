@@ -9,7 +9,7 @@ use crate::error::{AutodiffError, Result};
 /// # Examples
 ///
 /// ```
-/// use autodiff::{MultiAD, multi_ops};
+/// use petite_ad::{MultiAD, multi_ops};
 ///
 /// // Build graph: f(x, y) = sin(x) * (x + y)
 /// let exprs = multi_ops![
@@ -290,7 +290,7 @@ impl MultiAD {
     /// # Examples
     ///
     /// ```
-    /// use autodiff::{MultiAD, multi_ops};
+    /// use petite_ad::{MultiAD, multi_ops};
     ///
     /// let exprs = multi_ops![(inp, 0), (inp, 1), (add, 0, 1)];
     /// let result = MultiAD::compute(&exprs, &[2.0, 3.0]).unwrap();
@@ -342,7 +342,7 @@ impl MultiAD {
     /// # Examples
     ///
     /// ```
-    /// use autodiff::{MultiAD, multi_ops};
+    /// use petite_ad::{MultiAD, multi_ops};
     /// use std::sync::Arc;
     ///
     /// let exprs = multi_ops![

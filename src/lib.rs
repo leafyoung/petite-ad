@@ -1,4 +1,4 @@
-//! # Autodiff
+//! # petite AD
 //!
 //! A pure Rust automatic differentiation library supporting both single-variable
 //! and multi-variable functions with reverse-mode differentiation (backpropagation).
@@ -14,7 +14,7 @@
 //!
 //! ### Single-variable function
 //! ```
-//! use autodiff::{MonoAD, mono_ops};
+//! use petite_ad::{MonoAD, mono_ops};
 //!
 //! let ops = mono_ops![sin, cos, exp];
 //! let (value, grad_fn) = MonoAD::compute_grad(&ops, 2.0);
@@ -24,7 +24,7 @@
 //!
 //! ### Multi-variable function
 //! ```
-//! use autodiff::{MultiAD, multi_ops};
+//! use petite_ad::{MultiAD, multi_ops};
 //!
 //! let exprs = multi_ops![
 //!     (inp, 0),    // x₁

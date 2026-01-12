@@ -14,7 +14,7 @@ use super::multi_ad::MultiAD;
 /// # Examples
 ///
 /// ```rust
-/// use autodiff::{GraphBuilder, MultiAD};
+/// use petite_ad::{GraphBuilder, MultiAD};
 ///
 /// // Build: f(x, y) = sin(x) * (x + y)
 /// let graph = GraphBuilder::new(2)  // 2 inputs
@@ -47,7 +47,7 @@ impl GraphBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use autodiff::GraphBuilder;
+    /// use petite_ad::GraphBuilder;
     ///
     /// let builder = GraphBuilder::new(3);  // 3 inputs: x0, x1, x2
     /// ```
@@ -222,7 +222,7 @@ impl GraphBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use autodiff::{GraphBuilder, MultiAD};
+    /// use petite_ad::{GraphBuilder, MultiAD};
     ///
     /// let graph = GraphBuilder::new(2)
     ///     .add(0, 1)

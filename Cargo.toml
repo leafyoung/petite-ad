@@ -1,7 +1,20 @@
 [package]
-name = "autodiff"
+name = "petite-ad"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "A lightweight automatic differentiation library for learning and educational purposes"
+homepage = "https://github.com/leafyoung"
+repository = "https://github.com/leafyoung/petite-ad"
+readme = "README.md"
+keywords = [
+    "autodiff",
+    "differentiation",
+    "gradient",
+    "backpropagation",
+    "machine-learning",
+]
+categories = ["algorithms", "mathematics", "science"]
 
 [dependencies]
 

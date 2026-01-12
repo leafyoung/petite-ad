@@ -4,23 +4,23 @@ use super::mono_fn::{GraphType, MonoFn};
 use crate::mono_ops;
 
 #[cfg(test)]
-pub struct MF1(pub f64);
+pub struct MF2(pub f64);
 
 #[cfg(test)]
-impl MonoFn for MF1 {
+impl MonoFn for MF2 {
     fn input(&self) -> f64 {
         self.0
     }
 
     fn graph(&self) -> &'static GraphType {
-        &mono_ops![sin, sin, exp]
+        &mono_ops![neg]
     }
 
     fn expected_value(&self) -> f64 {
-        (self.0.sin().sin()).exp()
+        -self.0
     }
 
     fn expected_gradient(&self) -> f64 {
-        (self.0.sin().sin()).exp() * self.0.sin().cos() * self.0.cos()
+        -1.0
     }
 }

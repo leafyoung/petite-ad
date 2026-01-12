@@ -1,5 +1,5 @@
 // Criterion benchmarks for autodiff compute performance
-use autodiff::{MonoAD, MultiAD, mono_ops};
+use petite_ad::{MonoAD, MultiAD, mono_ops};
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 
 fn bench_single_operations(c: &mut Criterion) {

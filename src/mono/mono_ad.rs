@@ -8,7 +8,7 @@ use super::types::*;
 /// # Examples
 ///
 /// ```
-/// use autodiff::{MonoAD, mono_ops};
+/// use petite_ad::{MonoAD, mono_ops};
 ///
 /// // Compose operations: exp(cos(sin(x)))
 /// let ops = mono_ops![sin, cos, exp];
@@ -44,6 +44,7 @@ pub enum MonoAD {
     /// - Returns `inf` for very large inputs (> ~709 for f64)
     /// - Returns `0.0` for very large negative inputs (< ~-745 for f64)
     Exp,
+    Neg,
 }
 
 impl MonoAD {
@@ -56,6 +57,7 @@ impl MonoAD {
             MonoAD::Sin => x.sin(),
             MonoAD::Cos => x.cos(),
             MonoAD::Exp => x.exp(),
+            MonoAD::Neg => -x,
         }
     }
 
@@ -71,7 +73,7 @@ impl MonoAD {
     /// # Examples
     ///
     /// ```
-    /// use autodiff::{MonoAD, mono_ops};
+    /// use petite_ad::{MonoAD, mono_ops};
     ///
     /// let ops = mono_ops![sin, exp];
     /// let result = MonoAD::compute(&ops, 2.0);
@@ -107,6 +109,11 @@ impl MonoAD {
                 let grad = Box::new(move |dy: f64| -> f64 { dy * y });
                 (y, grad)
             }
+            MonoAD::Neg => {
+                let y = -x;
+                let grad = Box::new(move |dy: f64| -> f64 { dy * -1.0 });
+                (y, grad)
+            }
         };
         // For backward(): Box::from(boxed_closure) → returns the Box as-is (identity)
         // For backward_arc(): Arc::from(boxed_closure) → converts Box to Arc
@@ -134,7 +141,7 @@ impl MonoAD {
     /// # Examples
     ///
     /// ```
-    /// use autodiff::{MonoAD, mono_ops};
+    /// use petite_ad::{MonoAD, mono_ops};
     /// use std::sync::Arc;
     ///
     /// let ops = mono_ops![sin, cos];

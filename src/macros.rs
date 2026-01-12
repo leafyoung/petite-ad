@@ -3,7 +3,7 @@
 ///
 /// # Example
 /// ```
-/// use autodiff::{mono_ops, MonoAD};
+/// use petite_ad::{mono_ops, MonoAD};
 ///
 /// let (value, backprop) = MonoAD::compute_grad(&mono_ops![sin, sin, exp], 2.0);
 /// println!("backprop: {} {}", value, backprop(1.0));
@@ -14,6 +14,7 @@ macro_rules! mono_ops {
     (@one sin) => { $crate::MonoAD::Sin };
     (@one cos) => { $crate::MonoAD::Cos };
     (@one exp) => { $crate::MonoAD::Exp };
+    (@one neg) => { $crate::MonoAD::Neg };
     (@one $x:ident) => {
         compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, or exp"))
     };
@@ -39,7 +40,7 @@ macro_rules! mono_ops {
 ///
 /// # Example
 /// ```
-/// use autodiff::{multi_ops, MultiAD};
+/// use petite_ad::{multi_ops, MultiAD};
 ///
 /// // Build: f(x, y) = sin(x) * (x + y)
 /// let exprs = multi_ops![

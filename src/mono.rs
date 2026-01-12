@@ -13,3 +13,6 @@ pub use mono_fn::MonoFn;
 
 // Example implementation - not part of public API
 mod mf1;
+mod mf2;
+mod mf3;
+mod mf4;
