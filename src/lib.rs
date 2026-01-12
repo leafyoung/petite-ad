@@ -34,7 +34,7 @@
 //!     (mul, 2, 3), // sin(x₁) * (x₁ + x₂)
 //! ];
 //!
-//! let (value, grad_fn) = MultiAD::compute_grad(&exprs, &[0.6, 1.4]);
+//! let (value, grad_fn) = MultiAD::compute_grad(&exprs, &[0.6, 1.4]).unwrap();
 //! let gradients = grad_fn(1.0);
 //! println!("f(0.6, 1.4) = {}", value);
 //! println!("∇f = {:?}", gradients);
@@ -52,6 +52,7 @@ mod multi;
 // Core types
 pub use mono::MonoAD;
 pub use multi::MultiAD;
+pub use multi::builder::GraphBuilder;
 
 // Error handling
 pub use error::{AutodiffError, Result};

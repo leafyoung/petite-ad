@@ -33,7 +33,9 @@ macro_rules! mono_ops {
 /// # Supported Operations
 /// - `inp` - Input placeholder (takes single index: the input number)
 /// - `add`, `sub`, `mul`, `div` - Binary operations (takes two indices)
+/// - `pow` - Power operation (takes two indices: base, exponent)
 /// - `sin`, `cos`, `tan`, `exp`, `ln` - Unary operations (takes single index)
+/// - `sqrt`, `abs` - Unary operations (takes single index)
 ///
 /// # Example
 /// ```
@@ -48,7 +50,7 @@ macro_rules! mono_ops {
 ///     (mul, 2, 3),   // sin(x) * (x + y) at index 4
 /// ];
 ///
-/// let (value, grad_fn) = MultiAD::compute_grad(&exprs, &[0.6, 1.4]);
+/// let (value, grad_fn) = MultiAD::compute_grad(&exprs, &[0.6, 1.4]).unwrap();
 /// ```
 ///
 #[macro_export]
@@ -59,11 +61,14 @@ macro_rules! multi_ops {
     (@op tan) => { $crate::MultiAD::Tan };
     (@op exp) => { $crate::MultiAD::Exp };
     (@op ln) => { $crate::MultiAD::Ln };
+    (@op sqrt) => { $crate::MultiAD::Sqrt };
+    (@op abs) => { $crate::MultiAD::Abs };
     // Binary operations
     (@op add) => { $crate::MultiAD::Add };
     (@op sub) => { $crate::MultiAD::Sub };
     (@op mul) => { $crate::MultiAD::Mul };
     (@op div) => { $crate::MultiAD::Div };
+    (@op pow) => { $crate::MultiAD::Pow };
     // Input
     (@op inp) => { $crate::MultiAD::Inp };
     // Error for unknown operations
@@ -72,7 +77,7 @@ macro_rules! multi_ops {
             concat!(
                 "Unsupported operation: ",
                 stringify!($x),
-                ". Use: inp, add, sub, mul, div, sin, cos, tan, exp, or ln"
+                ". Use: inp, add, sub, mul, div, pow, sin, cos, tan, exp, ln, sqrt, or abs"
             )
         )
     };

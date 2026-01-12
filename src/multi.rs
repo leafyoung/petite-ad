@@ -8,6 +8,7 @@ mod f1;
 mod f2;
 mod f3;
 
+pub mod builder;
 mod multi_ad;
 mod multi_fn;
 #[cfg(test)]

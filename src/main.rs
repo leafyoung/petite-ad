@@ -37,7 +37,7 @@ fn main() {
     ];
 
     let inputs = [0.4, 1.6];
-    let (value, backprop_fn) = MultiAD::compute_grad(&exprs, &inputs);
+    let (value, backprop_fn) = MultiAD::compute_grad(&exprs, &inputs).unwrap();
     let grads = backprop_fn(1.0);
 
     println!("\nf(x₁, x₂) = sin(x₁) * (x₁ + x₂)");
@@ -47,7 +47,7 @@ fn main() {
 
     // Example 2: Multi-variable with type alias
     println!("\n2. Multi-variable with type aliases:");
-    let result: MultiResultBox = MultiAD::compute_grad(&exprs, &[3.0, 4.0]);
+    let result: MultiResultBox = MultiAD::compute_grad(&exprs, &[3.0, 4.0]).unwrap();
     let (value, grad_fn) = result;
     let grads = grad_fn(1.0);
     println!("   f(3.0, 4.0) = {:.1}", value);
@@ -68,7 +68,7 @@ fn main() {
     ];
 
     let inputs2 = [1.0, 2.0, 0.5];
-    let (value2, backprop_fn2) = MultiAD::compute_grad(&complex_exprs, &inputs2);
+    let (value2, backprop_fn2) = MultiAD::compute_grad(&complex_exprs, &inputs2).unwrap();
     let grads2 = backprop_fn2(1.0);
 
     println!("Function: f(x, y, z) = (x + y) * exp(z - sin(x))");

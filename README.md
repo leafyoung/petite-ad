@@ -9,7 +9,8 @@ A pure Rust automatic differentiation library supporting both single-variable an
 - **Box-wrapped by default** - Results use `Box<dyn Fn>` for flexibility; convert to `Arc` when needed for thread-safety
 - **Zero-copy backward pass** - Gradients computed efficiently through closure chains
 - **Convenient macros** - Use `mono_ops![]` for concise operation lists
-- **Comprehensive tests** - 24 unit tests + 10 doctests covering all operations and edge cases
+- **Builder API** - Fluent interface for constructing computation graphs
+- **Comprehensive tests** - 39 unit tests + 10 doctests covering all operations and edge cases
 
 ## Installation
 
@@ -37,6 +38,28 @@ println!("f'(2.0) = {}", gradient);  // derivative
 
 ### Multi-Variable Functions
 
+#### Using the GraphBuilder API (Recommended)
+
+```rust
+use autodiff::{GraphBuilder, MultiAD};
+
+// Build: f(x, y) = sin(x) * (x + y)
+let graph = GraphBuilder::new(2)  // 2 inputs
+    .add(0, 1)      // x + y at index 2
+    .sin(0)         // sin(x) at index 3
+    .mul(2, 3)      // sin(x) * (x + y) at index 4
+    .build();
+
+let inputs = &[0.6, 1.4];
+let (value, backprop_fn) = MultiAD::compute_grad(&graph, inputs).unwrap();
+let gradients = backprop_fn(1.0);
+
+println!("f(0.6, 1.4) = {}", value);
+println!("∇f = {:?}", gradients);  // [∂f/∂x, ∂f/∂y]
+```
+
+#### Using Manual Graph Construction
+
 ```rust
 use autodiff::MultiAD;
 
@@ -50,7 +73,7 @@ let exprs = &[
 ];
 
 let inputs = &[0.6, 1.4];
-let (value, backprop_fn) = MultiAD::compute_grad(exprs, inputs);
+let (value, backprop_fn) = MultiAD::compute_grad(exprs, inputs).unwrap();
 let gradients = backprop_fn(1.0);
 
 println!("f(0.6, 1.4) = {}", value);
@@ -69,16 +92,19 @@ println!("∇f = {:?}", gradients);  // [∂f/∂x, ∂f/∂y]
 ### MultiAD (Multi-Variable)
 | Operation | Arity | Description |
 |-----------|-------|-------------|
-| `Inp` | 0 | Input placeholder |
+| `Inp` | 1 | Input placeholder |
 | `Add` | 2 | Addition: `a + b` |
 | `Sub` | 2 | Subtraction: `a - b` |
 | `Mul` | 2 | Multiplication: `a * b` |
 | `Div` | 2 | Division: `a / b` |
+| `Pow` | 2 | Power: `a^b` |
 | `Sin` | 1 | Sine: `sin(x)` |
 | `Cos` | 1 | Cosine: `cos(x)` |
 | `Tan` | 1 | Tangent: `tan(x)` |
 | `Exp` | 1 | Exponential: `exp(x)` |
 | `Ln` | 1 | Natural log: `ln(x)` |
+| `Sqrt` | 1 | Square root: `sqrt(x)` |
+| `Abs` | 1 | Absolute value: `abs(x)` |
 
 ## API Reference
 
@@ -117,6 +143,41 @@ let arc_grad_fn: Arc<dyn Fn(f64) -> Vec<f64>> = Arc::from(grad_fn);
 type BackwardResultBox = (f64, Box<dyn Fn(f64) -> Vec<f64>>);
 ```
 
+### GraphBuilder
+
+Fluent API for building computation graphs without manually managing indices.
+
+#### `new(num_inputs: usize) -> GraphBuilder`
+Creates a new builder with the specified number of input variables.
+
+#### Builder Methods
+All methods return `&mut Self` for chaining:
+- `.sin(arg_index)` - Add sine operation
+- `.cos(arg_index)` - Add cosine operation
+- `.tan(arg_index)` - Add tangent operation
+- `.exp(arg_index)` - Add exponential operation
+- `.ln(arg_index)` - Add natural logarithm operation
+- `.sqrt(arg_index)` - Add square root operation
+- `.abs(arg_index)` - Add absolute value operation
+- `.add(left, right)` - Add addition operation
+- `.sub(left, right)` - Add subtraction operation
+- `.mul(left, right)` - Add multiplication operation
+- `.div(left, right)` - Add division operation
+- `.pow(base, exp)` - Add power operation
+
+#### `build() -> Vec<(MultiAD, Vec<usize>)>`
+Builds the final computation graph for use with `MultiAD::compute()` or `MultiAD::compute_grad()`.
+
+**Example:**
+```rust
+use autodiff::GraphBuilder;
+
+let graph = GraphBuilder::new(3)
+    .pow(0, 1)     // x^y at index 3
+    .add(3, 2)     // x^y + z at index 4
+    .build();
+```
+
 ## Box vs Arc
 
 The library defaults to `Box<dyn Fn>` for better performance. Convert to `Arc` when you need:
@@ -150,15 +211,14 @@ let weighted_grad = backprop(weight);  // weight * ∂f/∂x
 
 ## Examples
 
-See the [examples/](examples/) directory for complete demonstrations:
-- [`basic_demo.rs`](examples/basic_demo.rs) - Single and multi-variable differentiation basics
-- [`using_new_api.rs`](examples/using_new_api.rs) - Using the standardized public API and Arc conversion
-- [`multi_macro_demo.rs`](examples/multi_macro_demo.rs) - Multi-variable macros and graph building
+See [`src/main.rs`](src/main.rs) for complete demonstrations of:
+- Single-variable differentiation with `MonoAD`
+- Multi-variable differentiation with `MultiAD`
+- Using the convenient `multi_ops![]` macro syntax
 
-Run examples:
+Run the demo:
 ```bash
-cargo run --example basic_demo
-cargo run --example using_new_api
+cargo run --release
 ```
 
 ## Testing
@@ -168,11 +228,12 @@ Run the test suite:
 cargo test
 ```
 
-All 22 tests verify:
+All 39 tests verify:
 - Correctness of forward and backward passes
 - Consistency between Box and Arc implementations
 - Gradient accuracy against analytical derivatives
 - Edge cases (empty operations, chain rule, etc.)
+- Builder API correctness
 
 ## Benchmarking
 
@@ -244,7 +305,8 @@ MIT
 ## Contributing
 
 Contributions are welcome! Areas for improvement:
-- Additional mathematical operations (pow, sqrt, etc.)
 - Higher-order derivatives (Hessian computation)
 - Vector/matrix operations
 - Optimization algorithms (SGD, Adam, etc.)
+- Constant/literal values in computation graphs (e.g., `x^2` without needing a separate input)
+- Additional mathematical operations

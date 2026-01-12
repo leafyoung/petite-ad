@@ -1,5 +1,6 @@
 pub use super::multi_ad::MultiAD;
 pub use super::types::BackwardResultBox;
+use crate::error::Result;
 
 /// Type alias for a multi-variable computation graph
 #[allow(dead_code)] // Public API for library extension
@@ -27,18 +28,18 @@ pub trait MultiFn {
     fn expected_gradients(&self) -> Vec<f64>;
 
     /// Computes the function value using automatic differentiation (forward pass only).
-    fn compute(&self) -> f64 {
+    fn compute(&self) -> Result<f64> {
         MultiAD::compute(self.graph(), &self.inputs())
     }
 
     /// Computes both value and gradients using automatic differentiation.
-    fn compute_with_gradients(&self) -> BackwardResultBox {
+    fn compute_with_gradients(&self) -> Result<BackwardResultBox> {
         MultiAD::compute_grad(self.graph(), &self.inputs())
     }
 
     fn demonstrate(&self, with_assert: bool) {
         // Forward pass only
-        let result = self.compute();
+        let result = self.compute().unwrap();
         if with_assert {
             assert!((result - self.expected_value()).abs() < 1e-10);
         }
@@ -47,7 +48,7 @@ pub trait MultiFn {
         println!("f({:?}) = {}", &self.inputs(), result);
 
         // Forward + backward (automatic differentiation)
-        let (value, backprop_fn) = self.compute_with_gradients();
+        let (value, backprop_fn) = self.compute_with_gradients().unwrap();
         if with_assert {
             assert!((value - self.expected_value()).abs() < 1e-10);
         }

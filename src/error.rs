@@ -5,8 +5,8 @@ use std::fmt;
 /// Errors that can occur during automatic differentiation computations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AutodiffError {
-    /// An operation received an incorrect number of arguments.
-    InvalidArgumentCount {
+    /// An operation received an incorrect number of arguments (specific arity error).
+    ArityError {
         /// Name of the operation
         operation: &'static str,
         /// Expected number of arguments
@@ -28,26 +28,49 @@ pub enum AutodiffError {
 impl fmt::Display for AutodiffError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AutodiffError::InvalidArgumentCount {
+            AutodiffError::ArityError {
                 operation,
                 expected,
                 actual,
             } => write!(
                 f,
-                "{} expects {} argument(s), but received {}",
+                "Arity error in {}: expected {}, got {}",
                 operation, expected, actual
             ),
             AutodiffError::EmptyGraph => write!(f, "Computation graph is empty"),
-            AutodiffError::IndexOutOfBounds { index, max_index } => write!(
-                f,
-                "Index {} is out of bounds (max: {})",
-                index, max_index
-            ),
+            AutodiffError::IndexOutOfBounds { index, max_index } => {
+                write!(f, "Index {} is out of bounds (max: {})", index, max_index)
+            }
         }
     }
 }
 
 impl std::error::Error for AutodiffError {}
+
+impl AutodiffError {
+    /// Create an ArityError for an operation with incorrect argument count.
+    pub fn arity(operation: &'static str, expected: usize, actual: usize) -> Self {
+        AutodiffError::ArityError {
+            operation,
+            expected,
+            actual,
+        }
+    }
+
+    /// Validate that an operation received the correct number of arguments.
+    pub fn check_arity(
+        operation: &'static str,
+        expected: usize,
+        actual: usize,
+    ) -> std::result::Result<(), AutodiffError> {
+        if actual == expected {
+            Ok(())
+        } else {
+            Err(AutodiffError::arity(operation, expected, actual))
+        }
+    }
+
+}
 
 /// Result type for automatic differentiation operations.
 pub type Result<T> = std::result::Result<T, AutodiffError>;

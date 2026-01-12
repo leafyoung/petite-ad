@@ -22,18 +22,43 @@ pub enum MonoAD {
     /// Sine function: sin(x)
     ///
     /// Derivative: cos(x)
+    ///
+    /// # Notes
+    /// - Delegates to `f64::sin()`, which operates in radians
+    /// - Returns values in the range `[-1.0, 1.0]`
     Sin,
     /// Cosine function: cos(x)
     ///
     /// Derivative: -sin(x)
+    ///
+    /// # Notes
+    /// - Delegates to `f64::cos()`, which operates in radians
+    /// - Returns values in the range `[-1.0, 1.0]`
     Cos,
     /// Exponential function: exp(x)
     ///
     /// Derivative: exp(x)
+    ///
+    /// # Notes
+    /// - Delegates to `f64::exp()`
+    /// - Returns `inf` for very large inputs (> ~709 for f64)
+    /// - Returns `0.0` for very large negative inputs (< ~-745 for f64)
     Exp,
 }
 
 impl MonoAD {
+    /// Compute the forward pass for a single operation.
+    ///
+    /// This is an internal helper that computes just the forward value
+    /// without building gradient closures.
+    fn forward(&self, x: f64) -> f64 {
+        match self {
+            MonoAD::Sin => x.sin(),
+            MonoAD::Cos => x.cos(),
+            MonoAD::Exp => x.exp(),
+        }
+    }
+
     /// Compute the forward pass only (no gradient computation).
     ///
     /// Evaluates the composed function by applying operations sequentially.
@@ -55,7 +80,7 @@ impl MonoAD {
     pub fn compute(exprs: &[MonoAD], x: f64) -> f64 {
         let mut value = x;
         for expr in exprs {
-            value = expr.backward_generic::<Box<DynMathFn>>(value).0;
+            value = expr.forward(value);
         }
         value
     }
@@ -119,6 +144,7 @@ impl MonoAD {
     /// // Convert to Arc if needed for sharing
     /// let arc_grad_fn: Arc<dyn Fn(f64) -> f64> = Arc::from(grad_fn);
     /// ```
+    #[must_use = "gradient computation is expensive; discarding the result is likely a bug"]
     fn compute_grad_generic<W>(exprs: &[MonoAD], x: f64) -> (f64, W)
     where
         W: From<Box<DynMathFn>> + std::ops::Deref<Target = DynMathFn> + 'static,
@@ -145,6 +171,7 @@ impl MonoAD {
         (value, W::from(backward_fn))
     }
 
+    #[must_use = "gradient computation is expensive; discarding the result is likely a bug"]
     pub fn compute_grad(exprs: &[MonoAD], x: f64) -> BackwardResultBox {
         Self::compute_grad_generic::<Box<DynMathFn>>(exprs, x)
     }
