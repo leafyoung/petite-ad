@@ -1,4 +1,7 @@
 mod macros;
-mod math_op;
 
-pub use math_op::{BackwardResult, BackwardResultArc, MathFn, MathOp};
+mod mono;
+pub use mono::MonoAD;
+
+mod multi;
+pub use multi::MultiAD;

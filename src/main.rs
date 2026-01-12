@@ -1,18 +1,26 @@
-mod f;
 mod macros;
-mod math_op;
+mod mono;
+mod multi;
 
-use f::{f, f_prime};
-use math_op::MathOp;
+use mono::{MF1, MonoAD, MonoFn};
+use multi::{F1, F2, F3, MultiAD, MultiFn};
 
 fn main() {
-    println!("Hello, world!");
-    println!("f(2.0) = {}, f_prime(2.0) = {}", f(2.0), f_prime(2.0));
+    println!("--- Mono-variable automatic differentiation ---");
+    let mf1 = MF1(2.0);
+    mf1.demonstrate();
 
-    // Use the macro to convert function names to MathOp at compile time
-    let (value, backprop) = MathOp::compute(&math_ops![sin, sin, exp], 2.0);
-    println!("backprop: {} {}", value, backprop(1.0));
+    println!("\n--- Multi-variable automatic differentiation ---");
 
-    let (value, backprop) = MathOp::compute_arc(&math_ops![sin, sin, exp], 2.0);
-    println!("backprop: {} {}", value, backprop(1.0));
+    // Build computation graph using F1's graph method: f(x₁, x₂) = sin(x₁) * (x₁ + x₂)
+    let x1 = 0.4;
+    let x2 = 1.6;
+    let formula = F1(x1, x2); // Values don't matter for graph construction
+    formula.demonstrate();
+
+    let formula = F2(x1, x2); // Values don't matter for graph construction
+    formula.demonstrate();
+
+    let formula = F3(x1, x2); // Values don't matter for graph construction
+    formula.demonstrate();
 }
