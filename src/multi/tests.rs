@@ -228,3 +228,10 @@ fn test_different_cotangents() {
         }
     }
 }
+
+#[test]
+fn test_f() {
+    F1(0.5, 1.0).demonstrate(true);
+    F2(0.5, 1.0).demonstrate(true);
+    F3(0.5, 1.0).demonstrate(true);
+}

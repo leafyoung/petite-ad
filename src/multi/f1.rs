@@ -1,6 +1,7 @@
 use crate::multi_ops;
 
 pub use super::multi_fn::{GraphType, MultiFn};
+use super::multi_ad::MultiAD;
 
 #[allow(unused)]
 pub struct F1(pub f64, pub f64); // Represents f(x₁, x₂) = sin(x₁) * (x₁ + x₂)
@@ -24,20 +25,16 @@ impl MultiFn for F1 {
     }
 
     fn graph(&self) -> &'static GraphType {
-        // Using Box::leak to create a static reference
-        // Box::leak converts Box<T> -> &'static T by leaking memory (never freed)
-        // This is idiomatic for application constants that should live forever
-        use std::sync::OnceLock;
-        static GRAPH: OnceLock<&'static GraphType> = OnceLock::new();
-
-        GRAPH.get_or_init(|| {
-            Box::leak(Box::new(multi_ops![
+        use std::sync::LazyLock;
+        static GRAPH: LazyLock<Vec<(MultiAD, Vec<usize>)>> = LazyLock::new(|| {
+            Vec::from(multi_ops![
                 (inp, 0),    // x₁ at index 0
                 (inp, 1),    // x₂ at index 1
                 (add, 0, 1), // x₁ + x₂ at index 2
                 (sin, 0),    // sin(x₁) at index 3
                 (mul, 2, 3), // sin(x₁) * (x₁ + x₂) at index 4
-            ]))
-        })
+            ])
+        });
+        &GRAPH
     }
 }

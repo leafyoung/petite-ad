@@ -4,8 +4,8 @@ A pure Rust automatic differentiation library supporting both single-variable an
 
 ## Features
 
-- **Single-variable autodiff** ([`MonoAD`](src/mono_op.rs)) - Chain operations like `sin`, `cos`, `exp` with automatic gradient computation
-- **Multi-variable autodiff** ([`MultiAD`](src/multi_op.rs)) - Build computational graphs for functions with multiple inputs
+- **Single-variable autodiff** ([`MonoAD`](src/mono/mono_ad.rs)) - Chain operations like `sin`, `cos`, `exp` with automatic gradient computation
+- **Multi-variable autodiff** ([`MultiAD`](src/multi/multi_ad.rs)) - Build computational graphs for functions with multiple inputs
 - **Dual wrapper support** - Both `Box<T>` and `Arc<T>` for flexible memory management
 - **Zero-copy backward pass** - Gradients computed efficiently through closure chains
 - **Convenient macros** - Use `mono_ops![]` for concise operation lists

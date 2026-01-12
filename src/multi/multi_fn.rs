@@ -24,15 +24,22 @@ pub trait MultiFn {
         MultiAD::compute_grad_arc(self.graph(), &self.to_vec())
     }
 
-    fn demonstrate(&self) {
+    fn demonstrate(&self, with_assert: bool) {
         // Forward pass only
         let result = self.compute();
+        if with_assert {
+            assert!((result - self.f()).abs() < 1e-10);
+        }
+
         println!("\nForward pass only:");
         println!("f({:?}) = {}", &self.to_vec(), result);
 
         // Forward + backward (automatic differentiation)
         let (value, backprop_fn) = self.auto_grad();
-        let grads = backprop_fn(1.0); // Call with cotangent = 1.0
+        if with_assert {
+            assert!((value - self.f()).abs() < 1e-10);
+        }
+        let grads = backprop_fn(1.0);
         println!("\nForward + backward (automatic differentiation) with Box:");
         println!("f({:?}) = {}", &self.to_vec(), value);
         for (i, grad) in grads.iter().enumerate() {
@@ -40,11 +47,14 @@ pub trait MultiFn {
         }
 
         let (value, backprop_fn) = self.auto_grad_arc();
-        let grads = backprop_fn(1.0); // Call with cotangent = 1.0
+        let grads_arc = backprop_fn(1.0);
         println!("\nForward + backward (automatic differentiation) with Arc:");
         println!("f({:?}) = {}", &self.to_vec(), value);
-        for (i, grad) in grads.iter().enumerate() {
+        for ((i, grad_auto), grad) in grads_arc.iter().enumerate().zip(grads.iter()) {
             println!("∂f/∂x{} = {}", i + 1, grad);
+            if with_assert {
+                assert!((grad_auto - grad).abs() < 1e-10);
+            }
         }
 
         // Verify against analytical solution
@@ -53,11 +63,14 @@ pub trait MultiFn {
         println!("∂f/∂x₁, ∂f/∂x₂, ... = {:?}", &expected_grad);
 
         println!("\nGradient differences:");
-        for (expected, auto) in expected_grad.iter().zip(grads.iter()) {
+        for (expected, auto_arc) in expected_grad.iter().zip(grads_arc.iter()) {
             println!(
                 "|∂f/∂x (auto) - ∂f/∂x (analytic)| = {}",
-                (auto - expected).abs()
+                (auto_arc - expected).abs(),
             );
+            if with_assert {
+                assert!((auto_arc - expected).abs() < 1e-10);
+            }
         }
     }
 }

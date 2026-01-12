@@ -24,25 +24,33 @@ pub trait MonoFn {
         MonoAD::compute_grad_arc(self.graph(), self.to_value())
     }
 
-    fn demonstrate(&self) {
+    fn demonstrate(&self, with_assert: bool) {
         // Forward pass only
         let result = self.compute();
+        if with_assert {
+            assert!((result - self.f()).abs() < 1e-10);
+        }
         println!("\nForward pass only:");
         println!("f({:?}) = {}", &self.to_value(), result);
 
         // Forward + backward (automatic differentiation)
         let (value, backprop_fn) = self.auto_grad();
+        if with_assert {
+            assert!((value - self.f()).abs() < 1e-10);
+        }
         let grad = backprop_fn(1.0);
         println!("\nForward + backward (automatic differentiation) with Box:");
         println!("f({:?}) = {}", &self.to_value(), value);
         println!("∂f/∂x = {}", grad);
 
         let (value, backprop_fn) = self.auto_grad_arc();
-        let grad = backprop_fn(1.0);
+        let grad_arc = backprop_fn(1.0);
         println!("\nForward + backward (automatic differentiation) with Arc:");
         println!("f({:?}) = {}", &self.to_value(), value);
-        println!("∂f/∂x = {}", grad);
-
+        println!("∂f/∂x = {}", grad_arc);
+        if with_assert {
+            assert!((grad_arc - grad).abs() < 1e-10);
+        }
         // Verify against analytical solution
         let expected_grad = self.grad();
         println!("\nAnalytical gradients:");
@@ -51,7 +59,10 @@ pub trait MonoFn {
         println!("\nGradient differences:");
         println!(
             "|∂f/∂x (auto) - ∂f/∂x (analytic)| = {}",
-            (grad - expected_grad).abs()
+            (grad_arc - expected_grad).abs()
         );
+        if with_assert {
+            assert!((grad_arc - expected_grad).abs() < 1e-10);
+        }
     }
 }
