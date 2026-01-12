@@ -1,10 +1,12 @@
-use super::mono_ad::MonoAD;
+//! Type definitions for single-variable automatic differentiation.
+
 use std::sync::Arc;
 
-#[allow(unused)]
-pub type MathFn = fn(f64) -> f64;
+/// Dynamic trait object for single-variable gradient functions
 pub type DynMathFn = dyn Fn(f64) -> f64;
-pub type BackwardResultBox = (f64, Box<DynMathFn>);
-pub type BackwardResultArc = (f64, Arc<DynMathFn>);
 
-pub type GraphType = [MonoAD];
+/// Result type containing value and gradient function (Box-wrapped)
+pub type BackwardResultBox = (f64, Box<DynMathFn>);
+
+/// Result type containing value and gradient function (Arc-wrapped for sharing)
+pub type BackwardResultArc = (f64, Arc<DynMathFn>);

@@ -1,16 +1,57 @@
-use std::sync::Arc;
-
 use super::types::*;
 
-#[allow(unused)]
+/// Single-variable automatic differentiation operations.
+///
+/// Represents mathematical operations that can be composed and differentiated
+/// automatically using reverse-mode differentiation (backpropagation).
+///
+/// # Examples
+///
+/// ```
+/// use autodiff::{MonoAD, mono_ops};
+///
+/// // Compose operations: exp(cos(sin(x)))
+/// let ops = mono_ops![sin, cos, exp];
+/// let (value, grad_fn) = MonoAD::compute_grad(&ops, 2.0);
+///
+/// println!("f(2.0) = {}", value);
+/// println!("f'(2.0) = {}", grad_fn(1.0));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MonoAD {
+    /// Sine function: sin(x)
+    ///
+    /// Derivative: cos(x)
     Sin,
+    /// Cosine function: cos(x)
+    ///
+    /// Derivative: -sin(x)
     Cos,
+    /// Exponential function: exp(x)
+    ///
+    /// Derivative: exp(x)
     Exp,
 }
 
 impl MonoAD {
+    /// Compute the forward pass only (no gradient computation).
+    ///
+    /// Evaluates the composed function by applying operations sequentially.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - Slice of operations to apply in sequence
+    /// * `x` - Input value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use autodiff::{MonoAD, mono_ops};
+    ///
+    /// let ops = mono_ops![sin, exp];
+    /// let result = MonoAD::compute(&ops, 2.0);
+    /// assert!((result - 2.0_f64.sin().exp()).abs() < 1e-10);
+    /// ```
     pub fn compute(exprs: &[MonoAD], x: f64) -> f64 {
         let mut value = x;
         for expr in exprs {
@@ -19,7 +60,7 @@ impl MonoAD {
         value
     }
 
-    // Generic helper that works with any wrapper type
+    // Helper that works with Box wrapper type
     // Box<dyn Fn> is the common type that all arms return
     fn backward_generic<W>(self, x: f64) -> (f64, W)
     where
@@ -47,8 +88,37 @@ impl MonoAD {
         (y, W::from(grad_fn))
     }
 
-    // Generic helper for compute operations
-    // MathOp shall be reversed outside before calling this function
+    /// Compute forward pass and return gradient function.
+    ///
+    /// Returns a tuple of (value, gradient_function). The gradient function
+    /// takes a cotangent (typically 1.0 for full derivative) and returns
+    /// the gradient at the input point.
+    ///
+    /// The result is Box-wrapped by default. If you need Arc for sharing across threads,
+    /// convert using `Arc::from(box_fn)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - Slice of operations to compose, in reverse order
+    /// * `x` - Input value to evaluate at
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (output_value, gradient_function)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use autodiff::{MonoAD, mono_ops};
+    /// use std::sync::Arc;
+    ///
+    /// let ops = mono_ops![sin, cos];
+    /// let (value, grad_fn) = MonoAD::compute_grad(&ops, 1.0);
+    /// let gradient = grad_fn(1.0);
+    ///
+    /// // Convert to Arc if needed for sharing
+    /// let arc_grad_fn: Arc<dyn Fn(f64) -> f64> = Arc::from(grad_fn);
+    /// ```
     fn compute_grad_generic<W>(exprs: &[MonoAD], x: f64) -> (f64, W)
     where
         W: From<Box<DynMathFn>> + std::ops::Deref<Target = DynMathFn> + 'static,
@@ -77,9 +147,5 @@ impl MonoAD {
 
     pub fn compute_grad(exprs: &[MonoAD], x: f64) -> BackwardResultBox {
         Self::compute_grad_generic::<Box<DynMathFn>>(exprs, x)
-    }
-
-    pub fn compute_grad_arc(exprs: &[MonoAD], x: f64) -> BackwardResultArc {
-        Self::compute_grad_generic::<Arc<DynMathFn>>(exprs, x)
     }
 }

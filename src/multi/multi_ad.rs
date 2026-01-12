@@ -1,19 +1,50 @@
-use std::sync::Arc;
-
 use super::types::*;
 
-#[allow(unused)]
+/// Multi-variable automatic differentiation operations.
+///
+/// Represents operations in a computational graph for functions with multiple inputs.
+/// Each operation takes references to previous results via indices.
+///
+/// # Examples
+///
+/// ```
+/// use autodiff::{MultiAD, multi_ops};
+///
+/// // Build graph: f(x, y) = sin(x) * (x + y)
+/// let exprs = multi_ops![
+///     (inp, 0),    // x at index 0
+///     (inp, 1),    // y at index 1
+///     (add, 0, 1), // x + y at index 2
+///     (sin, 0),    // sin(x) at index 3
+///     (mul, 2, 3), // sin(x) * (x + y) at index 4
+/// ];
+///
+/// let (value, grad_fn) = MultiAD::compute_grad(&exprs, &[0.6, 1.4]);
+/// let gradients = grad_fn(1.0);
+/// println!("f(0.6, 1.4) = {}", value);
+/// println!("∇f = {:?}", gradients);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MultiAD {
+    /// Input placeholder - references an input variable
     Inp,
+    /// Addition: a + b
     Add,
+    /// Subtraction: a - b
     Sub,
+    /// Multiplication: a * b
     Mul,
+    /// Division: a / b
     Div,
+    /// Sine function: sin(x)
     Sin,
+    /// Cosine function: cos(x)
     Cos,
+    /// Tangent function: tan(x)
     Tan,
+    /// Exponential function: exp(x)
     Exp,
+    /// Natural logarithm: ln(x)
     Ln,
 }
 
@@ -70,7 +101,6 @@ impl MultiAD {
     where
         W: From<Box<DynGradFn>>,
     {
-        // Helper to create the closure
         let backward_fn: Box<dyn Fn(f64) -> Vec<f64>> = match self {
             MultiAD::Inp => {
                 assert!(args.len() == 1, "Inp expects 1 argument");
@@ -142,7 +172,24 @@ impl MultiAD {
         W::from(backward_fn)
     }
 
-    /// Compute forward pass only (no gradients)
+    /// Compute forward pass only (no gradient computation).
+    ///
+    /// Evaluates the computational graph to produce the final output value.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - Slice of (operation, indices) pairs defining the computation graph
+    /// * `inputs` - Input values for the function
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use autodiff::{MultiAD, multi_ops};
+    ///
+    /// let exprs = multi_ops![(inp, 0), (inp, 1), (add, 0, 1)];
+    /// let result = MultiAD::compute(&exprs, &[2.0, 3.0]);
+    /// assert!((result - 5.0).abs() < 1e-10);
+    /// ```
     pub fn compute(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> f64 {
         let mut values: Vec<f64> = inputs.to_vec();
 
@@ -163,15 +210,51 @@ impl MultiAD {
         values.last().copied().unwrap_or(0.0)
     }
 
-    /// Generic helper for compute_grad operations
-    /// Supports both Box and Arc wrapper types
+    /// Compute forward pass and return gradient function.
+    ///
+    /// Returns a tuple of (value, gradient_function). The gradient function
+    /// takes a cotangent (typically 1.0) and returns a vector of gradients
+    /// with respect to each input.
+    ///
+    /// The result is Box-wrapped by default. If you need Arc for sharing across threads,
+    /// convert using `Arc::from(box_fn)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - Computational graph as (operation, indices) pairs
+    /// * `inputs` - Input values to evaluate at
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (output_value, gradient_function)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use autodiff::{MultiAD, multi_ops};
+    /// use std::sync::Arc;
+    ///
+    /// let exprs = multi_ops![
+    ///     (inp, 0), (inp, 1),
+    ///     (add, 0, 1), (sin, 0), (mul, 2, 3)
+    /// ];
+    /// let (value, grad_fn) = MultiAD::compute_grad(&exprs, &[0.6, 1.4]);
+    /// let gradients = grad_fn(1.0);
+    ///
+    /// // Convert to Arc if needed for sharing
+    /// let arc_grad_fn: Arc<dyn Fn(f64) -> Vec<f64>> = Arc::from(grad_fn);
+    /// ```
     fn compute_grad_generic<W>(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> (f64, W)
     where
         W: From<Box<DynGradFn>> + std::ops::Deref<Target = DynGradFn> + 'static,
     {
-        let mut values: Vec<f64> = inputs.to_vec();
-        let mut backward_ops: Vec<Box<DynGradFn>> = Vec::new();
-        let mut arg_indices_list: Vec<Vec<usize>> = Vec::new();
+        // Pre-allocate with capacity for better performance
+        let estimated_size = inputs.len() + exprs.len();
+        let mut values: Vec<f64> = Vec::with_capacity(estimated_size);
+        values.extend_from_slice(inputs);
+
+        let mut backward_ops: Vec<Box<DynGradFn>> = Vec::with_capacity(exprs.len());
+        let mut arg_indices_list: Vec<Vec<usize>> = Vec::with_capacity(exprs.len());
 
         // Forward pass: compute all values and track backward operations
         for (op, args) in exprs {
@@ -197,16 +280,18 @@ impl MultiAD {
             let mut cotangent_values = vec![0.0; values_clone.len()];
             cotangent_values[values_clone.len() - 1] = cotangent;
 
+            // Backward pass: propagate cotangents from output to inputs
             for (i, (backward_op, arg_indices)) in backward_ops
                 .iter()
                 .zip(arg_indices_list.iter())
-                .rev()
+                .rev() // Process operations in reverse order
                 .enumerate()
             {
                 let output_idx = values_clone.len() - 1 - i;
                 let current_cotangent_value = cotangent_values[output_idx];
                 let argv_cotangents = backward_op(current_cotangent_value);
 
+                // Accumulate gradients for each input argument
                 for (arg_idx, arg_cotangent) in arg_indices.iter().zip(argv_cotangents) {
                     cotangent_values[*arg_idx] += arg_cotangent;
                 }
@@ -218,15 +303,7 @@ impl MultiAD {
         (final_value, W::from(backward_fn))
     }
 
-    /// Compute forward pass and return gradients with respect to all inputs
-    /// Returns (value, backward_fn) where backward_fn(cotangent) returns gradients w.r.t. inputs
     pub fn compute_grad(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> BackwardResultBox {
         Self::compute_grad_generic::<Box<DynGradFn>>(exprs, inputs)
-    }
-
-    /// Compute forward pass and return gradients wrapped in Arc
-    /// Returns (value, backward_fn) where backward_fn(cotangent) returns gradients w.r.t. inputs
-    pub fn compute_grad_arc(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> BackwardResultArc {
-        Self::compute_grad_generic::<Arc<DynGradFn>>(exprs, inputs)
     }
 }

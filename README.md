@@ -6,10 +6,10 @@ A pure Rust automatic differentiation library supporting both single-variable an
 
 - **Single-variable autodiff** ([`MonoAD`](src/mono/mono_ad.rs)) - Chain operations like `sin`, `cos`, `exp` with automatic gradient computation
 - **Multi-variable autodiff** ([`MultiAD`](src/multi/multi_ad.rs)) - Build computational graphs for functions with multiple inputs
-- **Dual wrapper support** - Both `Box<T>` and `Arc<T>` for flexible memory management
+- **Box-wrapped by default** - Results use `Box<dyn Fn>` for flexibility; convert to `Arc` when needed for thread-safety
 - **Zero-copy backward pass** - Gradients computed efficiently through closure chains
 - **Convenient macros** - Use `mono_ops![]` for concise operation lists
-- **Comprehensive tests** - 22 unit tests covering all operations and edge cases
+- **Comprehensive tests** - 24 unit tests + 10 doctests covering all operations and edge cases
 
 ## Installation
 
@@ -84,16 +84,18 @@ println!("∇f = {:?}", gradients);  // [∂f/∂x, ∂f/∂y]
 
 ### MonoAD
 
-#### `compute(exprs: &[MonoAD], x: f64) -> BackwardResult`
+#### `compute_grad(exprs: &[MonoAD], x: f64) -> BackwardResultBox`
 Computes forward pass and returns `(value, gradient_fn)` using `Box<dyn Fn>`.
 
-#### `compute_arc(exprs: &[MonoAD], x: f64) -> BackwardResultArc`
-Same as `compute` but uses `Arc<dyn Fn>` for shared ownership.
-
-**Return types:**
+**Convert to Arc if needed:**
 ```rust
-type BackwardResult = (f64, Box<dyn Fn(f64) -> f64>);
-type BackwardResultArc = (f64, Arc<dyn Fn(f64) -> f64>);
+let (value, grad_fn) = MonoAD::compute_grad(&exprs, x);
+let arc_grad_fn: Arc<dyn Fn(f64) -> f64> = Arc::from(grad_fn);
+```
+
+**Return type:**
+```rust
+type BackwardResultBox = (f64, Box<dyn Fn(f64) -> f64>);
 ```
 
 ### MultiAD
@@ -104,23 +106,33 @@ Forward pass only - returns the computed value.
 #### `compute_grad(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> BackwardResultBox`
 Full forward + backward pass using `Box<dyn Fn>`.
 
-#### `compute_grad_arc(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> BackwardResultArc`
-Full forward + backward pass using `Arc<dyn Fn>`.
+**Convert to Arc if needed:**
+```rust
+let (value, grad_fn) = MultiAD::compute_grad(&exprs, inputs);
+let arc_grad_fn: Arc<dyn Fn(f64) -> Vec<f64>> = Arc::from(grad_fn);
+```
 
-**Return types:**
+**Return type:**
 ```rust
 type BackwardResultBox = (f64, Box<dyn Fn(f64) -> Vec<f64>>);
-type BackwardResultArc = (f64, Arc<dyn Fn(f64) -> Vec<f64>>);
 ```
 
 ## Box vs Arc
 
-| Wrapper | Pros | Cons | Use Case |
-|---------|------|------|----------|
-| `Box<T>` | Faster, no atomic overhead | Single ownership | Single-threaded, performance-critical |
-| `Arc<T>` | Shared ownership, thread-safe | Slower due to atomics | Multi-threaded, shared gradients |
+The library defaults to `Box<dyn Fn>` for better performance. Convert to `Arc` when you need:
+- **Thread-safe sharing** - Clone and send gradients across threads
+- **Multiple ownership** - Store gradient functions in multiple locations
 
-**Performance:** `Arc` is approximately **1.6-1.8x slower** than `Box` for closure calls due to atomic reference counting overhead.
+```rust
+// Default Box for single-threaded use
+let (value, grad_fn) = MonoAD::compute_grad(&exprs, x);
+
+// Convert to Arc for thread-safe sharing
+let arc_grad_fn: Arc<dyn Fn(f64) -> f64> = Arc::from(grad_fn);
+let clone = arc_grad_fn.clone(); // Can clone Arc
+```
+
+**Performance Note:** `Arc` has slight overhead (~1.1-1.2x) due to atomic reference counting, but the difference is negligible for most autodiff workloads where the computation dominates.
 
 ## Cotangent Values
 
@@ -138,15 +150,15 @@ let weighted_grad = backprop(weight);  // weight * ∂f/∂x
 
 ## Examples
 
-See [`src/main.rs`](src/main.rs) for complete examples demonstrating:
-- Single-variable differentiation
-- Multi-variable gradient computation
-- Box vs Arc usage
-- Verification against analytical gradients
+See the [examples/](examples/) directory for complete demonstrations:
+- [`basic_demo.rs`](examples/basic_demo.rs) - Single and multi-variable differentiation basics
+- [`using_new_api.rs`](examples/using_new_api.rs) - Using the standardized public API and Arc conversion
+- [`multi_macro_demo.rs`](examples/multi_macro_demo.rs) - Multi-variable macros and graph building
 
 Run examples:
 ```bash
-cargo run
+cargo run --example basic_demo
+cargo run --example using_new_api
 ```
 
 ## Testing

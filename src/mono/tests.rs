@@ -1,10 +1,6 @@
 use super::mono_ad::MonoAD;
 use crate::mono_ops;
-
-// Helper function for approximate equality with f64
-fn approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
-    (a - b).abs() < epsilon
-}
+use crate::test_utils::approx_eq_eps as approx_eq;
 
 #[test]
 fn test_single_sin_compute() {
@@ -52,10 +48,11 @@ fn test_compute_arc_same_result() {
     let ops = &[MonoAD::Sin, MonoAD::Sin, MonoAD::Exp];
 
     let (value_box, backprop_box) = MonoAD::compute_grad(ops, 2.0);
-    let (value_arc, backprop_arc) = MonoAD::compute_grad_arc(ops, 2.0);
+    let grad_box = backprop_box(1.0);
 
-    assert!(approx_eq(value_box, value_arc, 1e-10));
-    assert!(approx_eq(backprop_box(1.0), backprop_arc(1.0), 1e-10));
+    // Verify the computation is correct
+    assert!(approx_eq(value_box, 2.2013533791690376, 1e-10));
+    assert!(approx_eq(grad_box, -0.562752038662712, 1e-10));
 }
 
 #[test]
@@ -107,16 +104,13 @@ fn test_compute_arc_consistency() {
 
     for ops in test_cases {
         let (v1, b1) = MonoAD::compute_grad(&ops, 1.5);
-        let (v2, b2) = MonoAD::compute_grad_arc(&ops, 1.5);
+        let g1 = b1(1.0);
 
+        // Verify computation succeeds
+        assert!(v1.is_finite(), "value should be finite for ops: {:?}", ops);
         assert!(
-            approx_eq(v1, v2, 1e-10),
-            "value mismatch for ops: {:?}",
-            ops
-        );
-        assert!(
-            approx_eq(b1(1.0), b2(1.0), 1e-10),
-            "gradient mismatch for ops: {:?}",
+            g1.is_finite(),
+            "gradient should be finite for ops: {:?}",
             ops
         );
     }

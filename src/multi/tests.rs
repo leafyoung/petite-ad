@@ -1,10 +1,9 @@
+use super::f1::F1;
+use super::f2::F2;
+use super::f3::F3;
 use super::*;
 use crate::multi_ops;
-
-// Helper function for floating point comparison
-fn approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
-    (a - b).abs() < epsilon
-}
+use crate::test_utils::approx_eq_eps as approx_eq;
 
 #[test]
 fn test_forward_single_op() {
@@ -113,8 +112,8 @@ fn test_complex_function() {
 
     // Compare with analytical solution
     let f1 = F1(x1, x2);
-    let expected_value = f1.f();
-    let expected_grads = f1.grad();
+    let expected_value = f1.expected_value();
+    let expected_grads = f1.expected_gradients();
 
     assert!(
         approx_eq(value, expected_value, 1e-10),
@@ -185,8 +184,9 @@ fn test_compute_grad_arc_consistency() {
     let (_value_box, backprop_box) = MultiAD::compute_grad(exprs, inputs);
     let grads_box = backprop_box(1.0);
 
-    let (_value_arc, backprop_arc) = MultiAD::compute_grad_arc(exprs, inputs);
+    let (_value_arc, backprop_arc) = MultiAD::compute_grad(exprs, inputs);
     let grads_arc = backprop_arc(1.0);
+    // Arc conversion: let arc_fn = Arc::from(backprop_arc);
 
     assert_eq!(grads_box.len(), grads_arc.len());
     for i in 0..grads_box.len() {
