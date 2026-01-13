@@ -116,7 +116,14 @@ impl MultiAD {
     /// Get the expected arity for this operation
     fn expected_arity(&self) -> usize {
         match self {
-            MultiAD::Inp | MultiAD::Sin | MultiAD::Cos | MultiAD::Tan | MultiAD::Exp | MultiAD::Ln | MultiAD::Sqrt | MultiAD::Abs => 1,
+            MultiAD::Inp
+            | MultiAD::Sin
+            | MultiAD::Cos
+            | MultiAD::Tan
+            | MultiAD::Exp
+            | MultiAD::Ln
+            | MultiAD::Sqrt
+            | MultiAD::Abs => 1,
             MultiAD::Add | MultiAD::Sub | MultiAD::Mul | MultiAD::Div | MultiAD::Pow => 2,
         }
     }
@@ -187,9 +194,7 @@ impl MultiAD {
         AutodiffError::check_arity(self.op_name(), self.expected_arity(), args.len())?;
 
         let backward_fn: Box<dyn Fn(f64) -> Vec<f64>> = match self {
-            MultiAD::Inp => {
-                Box::new(|zcotangent: f64| vec![zcotangent])
-            }
+            MultiAD::Inp => Box::new(|zcotangent: f64| vec![zcotangent]),
             MultiAD::Sin => {
                 let arg_val = args[0];
                 Box::new(move |z_cotangent: f64| {
@@ -225,12 +230,8 @@ impl MultiAD {
                     vec![x_cotangent]
                 })
             }
-            MultiAD::Add => {
-                Box::new(|z_cotangent: f64| vec![z_cotangent, z_cotangent])
-            }
-            MultiAD::Sub => {
-                Box::new(|z_cotangent: f64| vec![z_cotangent, -z_cotangent])
-            }
+            MultiAD::Add => Box::new(|z_cotangent: f64| vec![z_cotangent, z_cotangent]),
+            MultiAD::Sub => Box::new(|z_cotangent: f64| vec![z_cotangent, -z_cotangent]),
             MultiAD::Mul => {
                 let arg0 = args[0];
                 let arg1 = args[1];
@@ -356,7 +357,10 @@ impl MultiAD {
     /// let arc_grad_fn: Arc<dyn Fn(f64) -> Vec<f64>> = Arc::from(grad_fn);
     /// ```
     #[must_use = "gradient computation is expensive; discarding the result is likely a bug"]
-    fn compute_grad_generic<W>(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> Result<(f64, W)>
+    pub fn compute_grad_generic<W>(
+        exprs: &[(MultiAD, Vec<usize>)],
+        inputs: &[f64],
+    ) -> Result<(f64, W)>
     where
         W: From<Box<DynGradFn>> + std::ops::Deref<Target = DynGradFn> + 'static,
     {
@@ -416,7 +420,10 @@ impl MultiAD {
     }
 
     #[must_use = "gradient computation is expensive; discarding the result is likely a bug"]
-    pub fn compute_grad(exprs: &[(MultiAD, Vec<usize>)], inputs: &[f64]) -> Result<BackwardResultBox> {
+    pub fn compute_grad(
+        exprs: &[(MultiAD, Vec<usize>)],
+        inputs: &[f64],
+    ) -> Result<BackwardResultBox> {
         Self::compute_grad_generic::<Box<DynGradFn>>(exprs, inputs)
     }
 }

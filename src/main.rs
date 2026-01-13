@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use petite_ad::{mono_ops, multi_ops, types::MonoResultBox, types::MultiResultBox, MonoAD, MultiAD};
+use petite_ad::{
+    mono_ops, multi_ops, types::MonoResultBox, types::MultiResultBox, MonoAD, MultiAD,
+};
 
 fn main() {
     println!("=== Autodiff Library Demo ===\n");

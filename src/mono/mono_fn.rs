@@ -38,8 +38,8 @@ pub trait MonoFn {
 
     #[cfg(test)]
     fn test_mono_ad(&self) {
-            use crate::test_utils::approx_eq_eps as approx_eq;
-            let (value, backprop) = MonoAD::compute_grad(self.graph(), self.input());
+        use crate::test_utils::approx_eq_eps as approx_eq;
+        let (value, backprop) = MonoAD::compute_grad(self.graph(), self.input());
         let expected_value = self.expected_value();
         assert!(approx_eq(value, expected_value, 1e-10), "value mismatch");
 

@@ -13,7 +13,7 @@ impl MonoFn for MF4 {
     }
 
     fn graph(&self) -> &'static GraphType {
-        &mono_ops![ sin, neg,]
+        &mono_ops![sin, neg,]
     }
 
     fn expected_value(&self) -> f64 {

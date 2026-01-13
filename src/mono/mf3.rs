@@ -18,7 +18,7 @@ impl MonoFn for MF3 {
 
     fn expected_value(&self) -> f64 {
         (-self.0).sin()
-     }
+    }
 
     fn expected_gradient(&self) -> f64 {
         -((-self.0).cos())

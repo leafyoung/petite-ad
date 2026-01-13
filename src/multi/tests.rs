@@ -335,11 +335,11 @@ fn test_complex_with_pow() {
     // Test f(x, y, z) = x^y + z where x=2, y=3, z=1
     // This computes: 2^3 + 1 = 9
     let exprs = &multi_ops![
-        (inp, 0),     // x at index 0
-        (inp, 1),     // y at index 1
-        (inp, 2),     // z at index 2
-        (pow, 0, 1),  // x^y at index 3
-        (add, 3, 2),  // x^y + z at index 4
+        (inp, 0),    // x at index 0
+        (inp, 1),    // y at index 1
+        (inp, 2),    // z at index 2
+        (pow, 0, 1), // x^y at index 3
+        (add, 3, 2), // x^y + z at index 4
     ];
 
     let x = 2.0;
@@ -366,10 +366,10 @@ fn test_sqrt_and_mul_chain() {
     // Test f(x, y) = sqrt(x) * y
     // This tests composition of sqrt and mul operations
     let exprs = &multi_ops![
-        (inp, 0),     // x at index 0
-        (inp, 1),     // y at index 1
-        (sqrt, 0),    // sqrt(x) at index 2
-        (mul, 2, 1),  // sqrt(x) * y at index 3
+        (inp, 0),    // x at index 0
+        (inp, 1),    // y at index 1
+        (sqrt, 0),   // sqrt(x) at index 2
+        (mul, 2, 1), // sqrt(x) * y at index 3
     ];
 
     let x = 16.0;

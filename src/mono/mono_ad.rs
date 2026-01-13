@@ -152,7 +152,7 @@ impl MonoAD {
     /// let arc_grad_fn: Arc<dyn Fn(f64) -> f64> = Arc::from(grad_fn);
     /// ```
     #[must_use = "gradient computation is expensive; discarding the result is likely a bug"]
-    fn compute_grad_generic<W>(exprs: &[MonoAD], x: f64) -> (f64, W)
+    pub fn compute_grad_generic<W>(exprs: &[MonoAD], x: f64) -> (f64, W)
     where
         W: From<Box<DynMathFn>> + std::ops::Deref<Target = DynMathFn> + 'static,
     {

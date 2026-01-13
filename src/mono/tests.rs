@@ -1,7 +1,7 @@
 use super::mono_ad::MonoAD;
-use crate::mono_ops;
-use super::{mf1::MF1, mf2::MF2, mf3::MF3, mf4::MF4};
 use super::mono_fn::MonoFn;
+use super::{mf1::MF1, mf2::MF2, mf3::MF3, mf4::MF4};
+use crate::mono_ops;
 use crate::test_utils::approx_eq_eps as approx_eq;
 
 #[test]
@@ -59,9 +59,9 @@ fn test_compute_arc_same_result() {
 
 #[test]
 fn test_mono_f() {
-MF1(-1.0).test_mono_ad();
-MF2(3.0).test_mono_ad();
-MF3(-5.0).test_mono_ad();
+    MF1(-1.0).test_mono_ad();
+    MF2(3.0).test_mono_ad();
+    MF3(-5.0).test_mono_ad();
     MF4(1.0).test_mono_ad();
 }
 

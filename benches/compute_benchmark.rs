@@ -1,6 +1,8 @@
 // Criterion benchmarks for autodiff compute performance
-use petite_ad::{MonoAD, MultiAD, mono_ops};
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use std::sync::Arc;
+
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use petite_ad::{mono_ops, types::MonoGradientFn, types::MultiGradientFn, MonoAD, MultiAD};
 
 fn bench_single_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("single_operation");
@@ -27,7 +29,7 @@ fn bench_single_operations(c: &mut Criterion) {
             &ops,
             |b, ops| {
                 b.iter(|| {
-                    let (value, backprop) = MonoAD::compute_grad(
+                    let (value, backprop) = MonoAD::compute_grad_generic::<Arc<MonoGradientFn>>(
                         std::hint::black_box(ops),
                         std::hint::black_box(2.0),
                     );
@@ -74,7 +76,7 @@ fn bench_chained_operations(c: &mut Criterion) {
             &exprs,
             |b, exprs| {
                 b.iter(|| {
-                    let (value, backprop) = MonoAD::compute_grad(
+                    let (value, backprop) = MonoAD::compute_grad_generic::<Arc<MonoGradientFn>>(
                         std::hint::black_box(exprs),
                         std::hint::black_box(2.0),
                     );
@@ -105,8 +107,10 @@ fn bench_macro_usage(c: &mut Criterion) {
 
     group.bench_function("compute_arc_with_macro", |b| {
         b.iter(|| {
-            let (value, backprop) =
-                MonoAD::compute_grad(std::hint::black_box(&exprs), std::hint::black_box(2.0));
+            let (value, backprop) = MonoAD::compute_grad_generic::<Arc<MonoGradientFn>>(
+                std::hint::black_box(&exprs),
+                std::hint::black_box(2.0),
+            );
             std::hint::black_box(value);
             std::hint::black_box(backprop(1.0));
         })
@@ -129,7 +133,7 @@ fn bench_backprop_execution(c: &mut Criterion) {
     });
 
     group.bench_function("compute_arc_backprop", |b| {
-        let (_value, backprop) = MonoAD::compute_grad(&exprs, 2.0);
+        let (_value, backprop) = MonoAD::compute_grad_generic::<Arc<MonoGradientFn>>(&exprs, 2.0);
         b.iter(|| {
             std::hint::black_box(backprop(std::hint::black_box(1.0)));
         })
@@ -157,7 +161,8 @@ fn bench_multi_forward_only(c: &mut Criterion) {
             let result = MultiAD::compute(
                 std::hint::black_box(exprs),
                 std::hint::black_box(&[0.6, 1.4]),
-            ).unwrap();
+            )
+            .unwrap();
             std::hint::black_box(result);
         })
     });
@@ -181,7 +186,8 @@ fn bench_multi_forward_backward(c: &mut Criterion) {
             let (value, backprop_fn) = MultiAD::compute_grad(
                 std::hint::black_box(exprs),
                 std::hint::black_box(&[0.6, 1.4]),
-            ).unwrap();
+            )
+            .unwrap();
             std::hint::black_box(value);
             let grads = backprop_fn(1.0);
             std::hint::black_box(grads);
@@ -193,7 +199,8 @@ fn bench_multi_forward_backward(c: &mut Criterion) {
             let (value, backprop_fn) = MultiAD::compute_grad(
                 std::hint::black_box(exprs),
                 std::hint::black_box(&[0.6, 1.4]),
-            ).unwrap();
+            )
+            .unwrap();
             std::hint::black_box(value);
             let grads = backprop_fn(1.0);
             std::hint::black_box(grads);
@@ -225,7 +232,8 @@ fn bench_multi_backward_only(c: &mut Criterion) {
 
     // Benchmark just the backward pass for Arc version
     group.bench_function("compute_grad_backprop_arc", |b| {
-        let (_value, backprop_fn) = MultiAD::compute_grad(exprs, &[0.6, 1.4]).unwrap();
+        let (_value, backprop_fn) =
+            MultiAD::compute_grad_generic::<Arc<MultiGradientFn>>(exprs, &[0.6, 1.4]).unwrap();
         b.iter(|| {
             let grads = backprop_fn(std::hint::black_box(1.0));
             std::hint::black_box(grads);
@@ -274,7 +282,8 @@ fn bench_multi_graph_complexity(c: &mut Criterion) {
                     let (value, backprop_fn) = MultiAD::compute_grad(
                         std::hint::black_box(exprs),
                         std::hint::black_box(&[0.5, 1.5]),
-                    ).unwrap();
+                    )
+                    .unwrap();
                     std::hint::black_box(value);
                     let grads = backprop_fn(1.0);
                     std::hint::black_box(grads);
@@ -290,7 +299,8 @@ fn bench_multi_graph_complexity(c: &mut Criterion) {
                     let (value, backprop_fn) = MultiAD::compute_grad(
                         std::hint::black_box(exprs),
                         std::hint::black_box(&[0.5, 1.5]),
-                    ).unwrap();
+                    )
+                    .unwrap();
                     std::hint::black_box(value);
                     let grads = backprop_fn(1.0);
                     std::hint::black_box(grads);

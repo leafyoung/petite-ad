@@ -69,7 +69,6 @@ impl AutodiffError {
             Err(AutodiffError::arity(operation, expected, actual))
         }
     }
-
 }
 
 /// Result type for automatic differentiation operations.

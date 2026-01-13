@@ -161,7 +161,8 @@ impl GraphBuilder {
     /// * `left_index` - Index of the left operand
     /// * `right_index` - Index of the right operand
     pub fn add(&mut self, left_index: usize, right_index: usize) -> &mut Self {
-        self.operations.push((MultiAD::Add, vec![left_index, right_index]));
+        self.operations
+            .push((MultiAD::Add, vec![left_index, right_index]));
         self.next_index += 1;
         self
     }
@@ -173,7 +174,8 @@ impl GraphBuilder {
     /// * `left_index` - Index of the left operand
     /// * `right_index` - Index of the right operand
     pub fn sub(&mut self, left_index: usize, right_index: usize) -> &mut Self {
-        self.operations.push((MultiAD::Sub, vec![left_index, right_index]));
+        self.operations
+            .push((MultiAD::Sub, vec![left_index, right_index]));
         self.next_index += 1;
         self
     }
@@ -185,7 +187,8 @@ impl GraphBuilder {
     /// * `left_index` - Index of the left operand
     /// * `right_index` - Index of the right operand
     pub fn mul(&mut self, left_index: usize, right_index: usize) -> &mut Self {
-        self.operations.push((MultiAD::Mul, vec![left_index, right_index]));
+        self.operations
+            .push((MultiAD::Mul, vec![left_index, right_index]));
         self.next_index += 1;
         self
     }
@@ -197,7 +200,8 @@ impl GraphBuilder {
     /// * `left_index` - Index of the numerator
     /// * `right_index` - Index of the denominator
     pub fn div(&mut self, left_index: usize, right_index: usize) -> &mut Self {
-        self.operations.push((MultiAD::Div, vec![left_index, right_index]));
+        self.operations
+            .push((MultiAD::Div, vec![left_index, right_index]));
         self.next_index += 1;
         self
     }
@@ -209,7 +213,8 @@ impl GraphBuilder {
     /// * `base_index` - Index of the base
     /// * `exp_index` - Index of the exponent
     pub fn pow(&mut self, base_index: usize, exp_index: usize) -> &mut Self {
-        self.operations.push((MultiAD::Pow, vec![base_index, exp_index]));
+        self.operations
+            .push((MultiAD::Pow, vec![base_index, exp_index]));
         self.next_index += 1;
         self
     }
@@ -280,9 +285,7 @@ mod tests {
     #[test]
     fn test_builder_basic() {
         // Build: f(x, y) = x + y
-        let graph = GraphBuilder::new(2)
-            .add(0, 1)
-            .build();
+        let graph = GraphBuilder::new(2).add(0, 1).build();
 
         let inputs = &[2.0, 3.0];
         let result = MultiAD::compute(&graph, inputs).unwrap();
@@ -293,9 +296,9 @@ mod tests {
     fn test_builder_complex() {
         // Build: f(x, y) = sin(x) * (x + y)
         let graph = GraphBuilder::new(2)
-            .add(0, 1)      // x + y at index 2
-            .sin(0)         // sin(x) at index 3
-            .mul(2, 3)      // sin(x) * (x + y) at index 4
+            .add(0, 1) // x + y at index 2
+            .sin(0) // sin(x) at index 3
+            .mul(2, 3) // sin(x) * (x + y) at index 4
             .build();
 
         let inputs = &[0.6, 1.4];
@@ -314,9 +317,9 @@ mod tests {
     fn test_builder_chaining() {
         // Build: f(x) = sin(cos(exp(x)))
         let graph = GraphBuilder::new(1)
-            .exp(0)        // exp(x) at index 1
-            .cos(1)        // cos(exp(x)) at index 2
-            .sin(2)        // sin(cos(exp(x))) at index 3
+            .exp(0) // exp(x) at index 1
+            .cos(1) // cos(exp(x)) at index 2
+            .sin(2) // sin(cos(exp(x))) at index 3
             .build();
 
         let inputs = &[0.5];
@@ -329,8 +332,8 @@ mod tests {
     fn test_builder_with_pow() {
         // Build: f(x, y, z) = x^y + z
         let graph = GraphBuilder::new(3)
-            .pow(0, 1)     // x^y at index 3
-            .add(3, 2)     // x^y + z at index 4
+            .pow(0, 1) // x^y at index 3
+            .add(3, 2) // x^y + z at index 4
             .build();
 
         let inputs = &[2.0, 3.0, 1.0];
@@ -342,16 +345,16 @@ mod tests {
     #[test]
     fn test_builder_next_index() {
         let mut builder = GraphBuilder::new(2);
-        assert_eq!(builder.next_index(), 2);  // Start at 2 (after inputs)
+        assert_eq!(builder.next_index(), 2); // Start at 2 (after inputs)
 
         builder.add(0, 1);
-        assert_eq!(builder.next_index(), 3);  // After add operation
+        assert_eq!(builder.next_index(), 3); // After add operation
 
         builder.sin(0);
-        assert_eq!(builder.next_index(), 4);  // After sin operation
+        assert_eq!(builder.next_index(), 4); // After sin operation
 
         builder.mul(2, 3);
-        assert_eq!(builder.next_index(), 5);  // After mul operation
+        assert_eq!(builder.next_index(), 5); // After mul operation
     }
 
     #[test]

@@ -51,8 +51,8 @@ mod multi;
 
 // Core types
 pub use mono::MonoAD;
-pub use multi::MultiAD;
 pub use multi::builder::GraphBuilder;
+pub use multi::MultiAD;
 
 // Error handling
 pub use error::{AutodiffError, Result};
