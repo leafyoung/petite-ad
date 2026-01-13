@@ -1,6 +1,5 @@
 ## History
 
-
 1. All function-based
 2. Split to module MonoAD and MultiAD, choose dyn to store in Box
 3. Add generics to support both Box and Arc

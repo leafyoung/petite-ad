@@ -111,7 +111,7 @@ impl MonoAD {
             }
             MonoAD::Neg => {
                 let y = -x;
-                let grad = Box::new(move |dy: f64| -> f64 { dy * -1.0 });
+                let grad = Box::new(move |dy: f64| -> f64 { -dy * 1.0 });
                 (y, grad)
             }
         };

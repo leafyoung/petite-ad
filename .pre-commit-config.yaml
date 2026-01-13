@@ -1,0 +1,65 @@
+# Pre-commit hooks for Rust project
+# See https://pre-commit.com for more information
+# Run `pre-commit install` to install these hooks
+
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Rust specific hooks using local cargo commands
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt
+        language: system
+        pass_filenames: false
+
+      - id: cargo-check
+        name: cargo check
+        entry: cargo check
+        language: system
+        args: ['--all-targets', '--all-features']
+        pass_filenames: false
+
+  # Clippy linting
+  - repo: local
+    hooks:
+      - id: clippy
+        name: cargo clippy
+        entry: cargo clippy
+        language: system
+        args: ['--all-targets', '--all-features', '--', '-D', 'warnings']
+        pass_filenames: false
+
+  # Run tests
+  - repo: local
+    hooks:
+      - id: cargo-test
+        name: cargo test
+        entry: cargo test
+        language: system
+        args: ['--all-features']
+        pass_filenames: false
+
+  # Check documentation
+  - repo: local
+    hooks:
+      - id: cargo-doc
+        name: cargo doc
+        entry: cargo doc
+        language: system
+        args: ['--no-deps', '--all-features']
+        pass_filenames: false

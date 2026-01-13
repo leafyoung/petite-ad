@@ -83,28 +83,30 @@ println!("∇f = {:?}", gradients);  // [∂f/∂x, ∂f/∂y]
 ## Available Operations
 
 ### MonoAD (Single-Variable)
+
 | Operation | Description | Derivative |
-|-----------|-------------|------------|
-| `Sin` | Sine | `x.cos()` |
-| `Cos` | Cosine | `-x.sin()` |
-| `Exp` | Exponential | `exp(x)` |
+| --------- | ----------- | ---------- |
+| `Sin`     | Sine        | `x.cos()`  |
+| `Cos`     | Cosine      | `-x.sin()` |
+| `Exp`     | Exponential | `exp(x)`   |
 
 ### MultiAD (Multi-Variable)
-| Operation | Arity | Description |
-|-----------|-------|-------------|
-| `Inp` | 1 | Input placeholder |
-| `Add` | 2 | Addition: `a + b` |
-| `Sub` | 2 | Subtraction: `a - b` |
-| `Mul` | 2 | Multiplication: `a * b` |
-| `Div` | 2 | Division: `a / b` |
-| `Pow` | 2 | Power: `a^b` |
-| `Sin` | 1 | Sine: `sin(x)` |
-| `Cos` | 1 | Cosine: `cos(x)` |
-| `Tan` | 1 | Tangent: `tan(x)` |
-| `Exp` | 1 | Exponential: `exp(x)` |
-| `Ln` | 1 | Natural log: `ln(x)` |
-| `Sqrt` | 1 | Square root: `sqrt(x)` |
-| `Abs` | 1 | Absolute value: `abs(x)` |
+
+| Operation | Arity | Description              |
+| --------- | ----- | ------------------------ |
+| `Inp`     | 1     | Input placeholder        |
+| `Add`     | 2     | Addition: `a + b`        |
+| `Sub`     | 2     | Subtraction: `a - b`     |
+| `Mul`     | 2     | Multiplication: `a * b`  |
+| `Div`     | 2     | Division: `a / b`        |
+| `Pow`     | 2     | Power: `a^b`             |
+| `Sin`     | 1     | Sine: `sin(x)`           |
+| `Cos`     | 1     | Cosine: `cos(x)`         |
+| `Tan`     | 1     | Tangent: `tan(x)`        |
+| `Exp`     | 1     | Exponential: `exp(x)`    |
+| `Ln`      | 1     | Natural log: `ln(x)`     |
+| `Sqrt`    | 1     | Square root: `sqrt(x)`   |
+| `Abs`     | 1     | Absolute value: `abs(x)` |
 
 ## License
 
@@ -113,6 +115,7 @@ MIT
 ## Contributing
 
 Contributions are welcome! Areas for improvement:
+
 - Higher-order derivatives (Hessian computation)
 - Vector/matrix operations
 - Optimization algorithms (SGD, Adam, etc.)
