@@ -9,6 +9,7 @@ mod f1;
 mod f2;
 mod f3;
 
+pub mod backend;
 pub mod builder;
 pub mod compiled;
 pub mod graph;
@@ -27,19 +28,22 @@ mod multi_fn;
 mod tests;
 pub mod types;
 
-pub use compiled::{
+pub use backend::{
     AcceleratorDeviceContext, AcceleratorDeviceKind, BackendCapabilities, BackendKind,
-    BackendRejectionReason, BackendSupportReport, BatchGradients, BatchGradientsBuffer,
-    BatchInputs, BatchLayout, BatchValues, BatchValuesBuffer, CompiledGraph, CompiledGraphMetadata,
-    CompiledWorkspace, DeviceBackend, DeviceBatchPlan, DeviceBuffer, DeviceBufferHandle,
-    DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet, DeviceExecutionMode,
-    DeviceExecutionTrace, DeviceMemoryLocation, DeviceTransferKind, DeviceTransferPlan,
-    DeviceTransferPolicy, ExecutionBackend, FlatInstruction, GpuBackendBoundary, Instruction,
-    MockDeviceBackend, OpCode, ScalarBackend, SimdBackend, UNUSED_NODE_ID,
+    BackendRejectionReason, BackendSupportReport, BatchLayout, DeviceBackend, DeviceBatchPlan,
+    DeviceBuffer, DeviceBufferHandle, DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet,
+    DeviceExecutionMode, DeviceExecutionTrace, DeviceMemoryLocation, DeviceTransferKind,
+    DeviceTransferPlan, DeviceTransferPolicy, ExecutionBackend, FlatInstruction,
+    GpuBackendBoundary, Instruction, MockDeviceBackend, OpCode, ScalarBackend, SimdBackend,
+    UNUSED_NODE_ID,
 };
 #[cfg(feature = "backend-wgpu")]
-pub use compiled::{
+pub use backend::{
     WgpuBackend, WgpuBuffer, WgpuBufferSet, WGPU_NATIVE_BATCH_COMPUTE_EXACT_SAFE_OPCODES,
+};
+pub use compiled::{
+    BatchGradients, BatchGradientsBuffer, BatchInputs, BatchValues, BatchValuesBuffer,
+    CompiledGraph, CompiledGraphMetadata, CompiledWorkspace,
 };
 pub use graph::{
     DomainPolicy, ExprGraph, ExprNode, GradientCheckEntry, GradientCheckReport, Graph, GraphNode,

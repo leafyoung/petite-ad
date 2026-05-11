@@ -41,10 +41,13 @@ use std::{
     sync::Arc,
 };
 
+use super::backend::{
+    BackendKind, BackendSupportReport, DeviceBatchPlan, DeviceBufferSet, DeviceExecutionTrace,
+    Instruction,
+};
 use super::compiled::{
-    BackendKind, BackendSupportReport, BatchGradients, BatchGradientsBuffer, BatchInputs,
-    BatchValues, BatchValuesBuffer, CompiledGraph, CompiledGraphMetadata, CompiledWorkspace,
-    DeviceBatchPlan, DeviceBufferSet, DeviceExecutionTrace, Instruction,
+    BatchGradients, BatchGradientsBuffer, BatchInputs, BatchValues, BatchValuesBuffer,
+    CompiledGraph, CompiledGraphMetadata, CompiledWorkspace,
 };
 use super::multi_ad::MultiAD;
 use super::multi_ad_fr::MultiAD2FR;
