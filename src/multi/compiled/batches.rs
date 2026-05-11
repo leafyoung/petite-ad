@@ -44,8 +44,24 @@ impl<'a> BatchInputs<'a> {
                 max_index: self.batch_size.saturating_sub(1),
             });
         }
-        let start = index * self.input_dim;
-        Ok(&self.data[start..start + self.input_dim])
+        let start = index
+            .checked_mul(self.input_dim)
+            .ok_or(AutodiffError::IndexOutOfBounds {
+                index,
+                max_index: self.batch_size.saturating_sub(1),
+            })?;
+        let end = start
+            .checked_add(self.input_dim)
+            .ok_or(AutodiffError::IndexOutOfBounds {
+                index,
+                max_index: self.batch_size.saturating_sub(1),
+            })?;
+        self.data
+            .get(start..end)
+            .ok_or(AutodiffError::IndexOutOfBounds {
+                index,
+                max_index: self.batch_size.saturating_sub(1),
+            })
     }
 }
 
