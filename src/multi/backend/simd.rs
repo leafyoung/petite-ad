@@ -102,11 +102,16 @@ fn simd_scalar_value(opcode: OpCode, args: &[f64]) -> Result<f64> {
     op_rules::forward_value(op, args)
 }
 
-fn simd_scalar_first_derivatives(opcode: OpCode, args: &[f64], value: f64) -> Result<Vec<f64>> {
+// Returns `[d0, d1]` where d1 is 0.0 for unary ops (arity ≤ 2, heap-free).
+fn simd_scalar_first_derivatives(opcode: OpCode, args: &[f64], value: f64) -> Result<[f64; 2]> {
     let op = opcode
         .to_multi_ad()
         .ok_or_else(simd_unsupported_opcode_error)?;
-    op_rules::first_derivatives(op, args, value)
+    let derivs = op_rules::first_derivatives(op, args, value)?;
+    Ok([
+        derivs.first().copied().unwrap_or(0.0),
+        derivs.get(1).copied().unwrap_or(0.0),
+    ])
 }
 
 fn append_scalar_compute_tail(
@@ -678,7 +683,7 @@ pub(crate) fn gradient_batch_simd_f64x2(
 
     let value_count = graph.num_inputs + graph.instructions.len();
     let mut values: Vec<__m128d> = Vec::with_capacity(value_count);
-    let mut cotangents: Vec<__m128d> = Vec::with_capacity(value_count);
+    let mut cotangents: Vec<__m128d> = vec![unsafe { _mm_setzero_pd() }; value_count];
     let mut gradient_pairs = Vec::with_capacity(graph.num_inputs);
     let mut row_index = 0;
     while row_index + 1 < batch.batch_size {
@@ -704,8 +709,8 @@ pub(crate) fn gradient_batch_simd_f64x2(
             continue;
         };
 
-        cotangents.clear();
-        cotangents.resize_with(value_count, || unsafe { _mm_setzero_pd() });
+        // SAFETY: _mm_setzero_pd is safe; fill zeros before each backward pass.
+        cotangents.fill(unsafe { _mm_setzero_pd() });
         let max_index = cotangents.len().saturating_sub(1);
         *cotangents
             .get_mut(output)
@@ -913,7 +918,7 @@ unsafe fn gradient_batch_simd_f64x4_impl(
 
     let value_count = graph.num_inputs + graph.instructions.len();
     let mut values: Vec<__m256d> = Vec::with_capacity(value_count);
-    let mut cotangents: Vec<__m256d> = Vec::with_capacity(value_count);
+    let mut cotangents: Vec<__m256d> = vec![_mm256_setzero_pd(); value_count];
     let mut gradient_quads = Vec::with_capacity(graph.num_inputs);
     let mut row_index = 0;
     while row_index + 3 < batch.batch_size {
@@ -942,8 +947,7 @@ unsafe fn gradient_batch_simd_f64x4_impl(
             continue;
         };
 
-        cotangents.clear();
-        cotangents.resize_with(value_count, || _mm256_setzero_pd());
+        cotangents.fill(_mm256_setzero_pd());
         let max_index = cotangents.len().saturating_sub(1);
         *cotangents
             .get_mut(output)

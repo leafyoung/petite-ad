@@ -71,6 +71,14 @@ impl ExprNode {
         self.node
     }
 
+    /// Check that `self` and `other` belong to the same [`ExprGraph`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `self` and `other` were created from different [`ExprGraph`]
+    /// instances. All arithmetic operators (`+`, `-`, `*`, `/`) between two
+    /// [`ExprNode`] values delegate here, so mixing nodes from separate graphs
+    /// will panic at runtime.
     fn same_graph(&self, other: &ExprNode) {
         assert!(
             Rc::ptr_eq(&self.graph, &other.graph),

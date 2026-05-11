@@ -104,6 +104,14 @@ impl BackendKind {
     }
 
     /// Execute batch value computation with this backend.
+    ///
+    /// # Performance
+    ///
+    /// When `self` is [`BackendKind::Wgpu`] this method calls
+    /// [`WgpuBackend::new_default`] on every invocation, which initialises a
+    /// new GPU device and queue each time. For repeated batch calls, create a
+    /// [`WgpuBackend`] once and call its [`ExecutionBackend::compute_batch`]
+    /// method directly instead of routing through `BackendKind::Wgpu`.
     pub fn compute_batch(
         &self,
         graph: &CompiledGraph,
@@ -140,6 +148,14 @@ impl BackendKind {
     }
 
     /// Execute batch gradient computation with this backend.
+    ///
+    /// # Performance
+    ///
+    /// When `self` is [`BackendKind::Wgpu`] this method calls
+    /// [`WgpuBackend::new_default`] on every invocation, which initialises a
+    /// new GPU device and queue each time. For repeated batch calls, create a
+    /// [`WgpuBackend`] once and call its [`ExecutionBackend::gradient_batch`]
+    /// method directly instead of routing through `BackendKind::Wgpu`.
     pub fn gradient_batch(
         &self,
         graph: &CompiledGraph,
