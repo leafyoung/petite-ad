@@ -1,8 +1,8 @@
 //! Tests for higher-order autodiff methods (RR, FR, RF).
 
-use super::mono_ad_fr::MonoAD2FR;
-use super::mono_ad_rf::MonoAD2RF;
-use super::mono_ad_rr::MonoAD2RR;
+use super::second_order::fr::MonoAD2FR;
+use super::second_order::rf::MonoAD2RF;
+use super::second_order::rr::MonoAD2RR;
 use crate::test_utils::approx_eq_eps as approx_eq;
 
 // Common tolerance for exact autodiff (machine precision)

@@ -1,10 +1,10 @@
 //! Shared local operation rules for multivariate autodiff.
 //!
 //! This module centralizes scalar values plus first- and second-order local
-//! derivatives for [`super::multi_ad::MultiAD`] operations so first-order,
+//! derivatives for [`super::first_order::MultiAD`] operations so first-order,
 //! forward-mode, and exact Hessian implementations can reuse the same formulas.
 
-use super::multi_ad::MultiAD;
+use super::first_order::MultiAD;
 use crate::{AutodiffError, Result};
 
 #[inline(always)]

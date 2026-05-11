@@ -1,6 +1,6 @@
-use super::mono_ad::MonoAD;
-use super::mono_fn::MonoFn;
-use super::{mf1::MF1, mf2::MF2, mf3::MF3, mf4::MF4};
+use super::examples::{MF1, MF2, MF3, MF4};
+use super::first_order::MonoAD;
+use super::func::MonoFn;
 use crate::mono_ops;
 use crate::test_utils::approx_eq_eps as approx_eq;
 use crate::AutodiffError;

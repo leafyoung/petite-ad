@@ -1,6 +1,6 @@
-use super::f1::F1;
-use super::f2::F2;
-use super::f3::F3;
+use super::examples::F1;
+use super::examples::F2;
+use super::examples::F3;
 use super::*;
 use crate::multi_ops;
 use crate::test_utils::approx_eq_eps as approx_eq;
