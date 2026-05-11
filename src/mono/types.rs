@@ -33,18 +33,9 @@ pub type BackwardResultArc = (f64, Arc<DynMathFn>);
 /// Neg: (-x.val, -x.tan)
 /// ```
 ///
-/// # Example
+/// # Example (unit test)
 ///
-/// ```rust,ignore
-/// // Note: Dual is an internal type accessible from crate::mono::types.
-///
-/// // Starting from a variable x with derivative 1.0
-/// let x = Dual::variable(2.0);
-///
-/// // Forward-mode computes both value and derivative
-/// let y = Dual { val: x.val.sin(), tan: x.val.cos() * x.tan };
-/// // y.val ≈ sin(2.0), y.tan ≈ cos(2.0)
-/// ```
+/// See [`tests::test_dual_forward_sin`] for a runnable forward-mode example.
 #[derive(Debug, Clone, Copy)]
 pub struct Dual {
     pub val: f64,
@@ -97,5 +88,16 @@ mod tests {
         let d = Dual::constant(5.0);
         assert_eq!(d.val, 5.0);
         assert_eq!(d.tan, 0.0);
+    }
+
+    #[test]
+    fn test_dual_forward_sin() {
+        let x = Dual::variable(2.0);
+        let y = Dual {
+            val: x.val.sin(),
+            tan: x.val.cos() * x.tan,
+        };
+        assert!((y.val - 2.0_f64.sin()).abs() < 1e-15);
+        assert!((y.tan - 2.0_f64.cos()).abs() < 1e-15);
     }
 }

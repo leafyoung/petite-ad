@@ -227,18 +227,11 @@ impl MonoAD2RR {
     /// - `first_derivative`: f'(x)
     /// - `second_derivative`: f''(x)
     ///
-    /// # Examples
+    /// # Note
     ///
-    /// ```rust,ignore
-    /// // This is a private method used internally by compute_hessian
-    /// use petite_ad::MonoAD2RR;
-    ///
-    /// let op = MonoAD2RR::Sin;
-    /// // forward_d2 is private and used internally
-    /// // See compute_hessian for public API examples
-    /// ```
-    ///
-    /// For public usage examples, see [`MonoAD2RR::compute_hessian`].
+    /// This is a private method used internally by `compute_hessian`.
+    /// See [`MonoAD2RR::compute_hessian`] for public API examples.
+    /// Unit tests for `forward_d2` are in the `tests` module below.
     ///
     /// # Complexity
     ///
@@ -657,5 +650,110 @@ impl MonoAD2RR {
 
         // After processing all operations, hessian contains ∂²F/∂x²
         Ok(hessian)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_forward_d2_sin() {
+        let op = MonoAD2RR::Sin;
+        let x = 0.5;
+        let (y, dy, ddy) = op.forward_d2(x);
+        assert!((y - x.sin()).abs() < 1e-15);
+        assert!((dy - x.cos()).abs() < 1e-15);
+        assert!((ddy - (-x.sin())).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_cos() {
+        let op = MonoAD2RR::Cos;
+        let x = 0.5;
+        let (y, dy, ddy) = op.forward_d2(x);
+        assert!((y - x.cos()).abs() < 1e-15);
+        assert!((dy - (-x.sin())).abs() < 1e-15);
+        assert!((ddy - (-x.cos())).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_tan() {
+        let op = MonoAD2RR::Tan;
+        let x = 0.5;
+        let (y, dy, ddy) = op.forward_d2(x);
+        let sec_sq = 1.0 / x.cos().powi(2);
+        assert!((y - x.tan()).abs() < 1e-15);
+        assert!((dy - sec_sq).abs() < 1e-15);
+        assert!((ddy - (2.0 * sec_sq * x.tan())).abs() < 1e-14);
+    }
+
+    #[test]
+    fn test_forward_d2_exp() {
+        let op = MonoAD2RR::Exp;
+        let x = 1.0;
+        let (y, dy, ddy) = op.forward_d2(x);
+        let ex = x.exp();
+        assert!((y - ex).abs() < 1e-15);
+        assert!((dy - ex).abs() < 1e-15);
+        assert!((ddy - ex).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_neg() {
+        let op = MonoAD2RR::Neg;
+        let x = 3.0;
+        let (y, dy, ddy) = op.forward_d2(x);
+        assert!((y - (-x)).abs() < 1e-15);
+        assert!((dy - (-1.0)).abs() < 1e-15);
+        assert!((ddy - 0.0).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_ln() {
+        let op = MonoAD2RR::Ln;
+        let x = 2.0;
+        let (y, dy, ddy) = op.forward_d2(x);
+        assert!((y - x.ln()).abs() < 1e-15);
+        assert!((dy - (1.0 / x)).abs() < 1e-15);
+        assert!((ddy - (-1.0 / x.powi(2))).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_sqrt() {
+        let op = MonoAD2RR::Sqrt;
+        let x = 4.0;
+        let (y, dy, ddy) = op.forward_d2(x);
+        let sqrt_x = x.sqrt();
+        assert!((y - sqrt_x).abs() < 1e-15);
+        assert!((dy - (1.0 / (2.0 * sqrt_x))).abs() < 1e-15);
+        assert!((ddy - (-1.0 / (4.0 * x * sqrt_x))).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_abs_positive() {
+        let op = MonoAD2RR::Abs;
+        let (y, dy, ddy) = op.forward_d2(3.0);
+        assert!((y - 3.0).abs() < 1e-15);
+        assert!((dy - 1.0).abs() < 1e-15);
+        assert!((ddy - 0.0).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_abs_negative() {
+        let op = MonoAD2RR::Abs;
+        let (y, dy, ddy) = op.forward_d2(-3.0);
+        assert!((y - 3.0).abs() < 1e-15);
+        assert!((dy - (-1.0)).abs() < 1e-15);
+        assert!((ddy - 0.0).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_forward_d2_abs_zero() {
+        let op = MonoAD2RR::Abs;
+        let (y, dy, ddy) = op.forward_d2(0.0);
+        assert!((y - 0.0).abs() < 1e-15);
+        assert!((dy - 0.0).abs() < 1e-15);
+        assert!((ddy - 0.0).abs() < 1e-15);
     }
 }
