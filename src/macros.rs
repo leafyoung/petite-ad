@@ -5,7 +5,7 @@
 /// ```
 /// use petite_ad::{mono_ops, MonoAD};
 ///
-/// let (value, backprop) = MonoAD::compute_grad(&mono_ops![sin, sin, exp], 2.0);
+/// let (value, backprop) = MonoAD::compute_grad(&mono_ops![sin, tan, exp], 2.0);
 /// println!("backprop: {} {}", value, backprop(1.0));
 /// ```
 ///
@@ -13,13 +13,74 @@
 macro_rules! mono_ops {
     (@one sin) => { $crate::MonoAD::Sin };
     (@one cos) => { $crate::MonoAD::Cos };
+    (@one tan) => { $crate::MonoAD::Tan };
     (@one exp) => { $crate::MonoAD::Exp };
     (@one neg) => { $crate::MonoAD::Neg };
+    (@one ln) => { $crate::MonoAD::Ln };
+    (@one sqrt) => { $crate::MonoAD::Sqrt };
+    (@one abs) => { $crate::MonoAD::Abs };
     (@one $x:ident) => {
-        compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, or exp"))
+        compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, tan, exp, neg, ln, sqrt, or abs"))
     };
     ($($x:ident),* $(,)?) => {
         [$($crate::mono_ops!(@one $x)),*]
+    };
+}
+
+/// Macro for MonoAD2RR (Reverse-over-Reverse) operations.
+#[macro_export]
+macro_rules! mono_ops_rr {
+    (@one sin) => { $crate::MonoAD2RR::Sin };
+    (@one cos) => { $crate::MonoAD2RR::Cos };
+    (@one tan) => { $crate::MonoAD2RR::Tan };
+    (@one exp) => { $crate::MonoAD2RR::Exp };
+    (@one neg) => { $crate::MonoAD2RR::Neg };
+    (@one ln) => { $crate::MonoAD2RR::Ln };
+    (@one sqrt) => { $crate::MonoAD2RR::Sqrt };
+    (@one abs) => { $crate::MonoAD2RR::Abs };
+    (@one $x:ident) => {
+        compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, tan, exp, neg, ln, sqrt, or abs"))
+    };
+    ($($x:ident),* $(,)?) => {
+        [$($crate::mono_ops_rr!(@one $x)),*]
+    };
+}
+
+/// Macro for MonoAD2FR (Forward-over-Reverse) operations.
+#[macro_export]
+macro_rules! mono_ops_fr {
+    (@one sin) => { $crate::MonoAD2FR::Sin };
+    (@one cos) => { $crate::MonoAD2FR::Cos };
+    (@one tan) => { $crate::MonoAD2FR::Tan };
+    (@one exp) => { $crate::MonoAD2FR::Exp };
+    (@one neg) => { $crate::MonoAD2FR::Neg };
+    (@one ln) => { $crate::MonoAD2FR::Ln };
+    (@one sqrt) => { $crate::MonoAD2FR::Sqrt };
+    (@one abs) => { $crate::MonoAD2FR::Abs };
+    (@one $x:ident) => {
+        compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, tan, exp, neg, ln, sqrt, or abs"))
+    };
+    ($($x:ident),* $(,)?) => {
+        [$($crate::mono_ops_fr!(@one $x)),*]
+    };
+}
+
+/// Macro for MonoAD2RF (Reverse-over-Forward) operations.
+#[macro_export]
+macro_rules! mono_ops_rf {
+    (@one sin) => { $crate::MonoAD2RF::Sin };
+    (@one cos) => { $crate::MonoAD2RF::Cos };
+    (@one tan) => { $crate::MonoAD2RF::Tan };
+    (@one exp) => { $crate::MonoAD2RF::Exp };
+    (@one neg) => { $crate::MonoAD2RF::Neg };
+    (@one ln) => { $crate::MonoAD2RF::Ln };
+    (@one sqrt) => { $crate::MonoAD2RF::Sqrt };
+    (@one abs) => { $crate::MonoAD2RF::Abs };
+    (@one $x:ident) => {
+        compile_error!(concat!("Unsupported math operation: ", stringify!($x), ". Use: sin, cos, tan, exp, neg, ln, sqrt, or abs"))
+    };
+    ($($x:ident),* $(,)?) => {
+        [$($crate::mono_ops_rf!(@one $x)),*]
     };
 }
 
@@ -36,7 +97,8 @@ macro_rules! mono_ops {
 /// - `add`, `sub`, `mul`, `div` - Binary operations (takes two indices)
 /// - `pow` - Power operation (takes two indices: base, exponent)
 /// - `sin`, `cos`, `tan`, `exp`, `ln` - Unary operations (takes single index)
-/// - `sqrt`, `abs` - Unary operations (takes single index)
+/// - `sqrt`, `abs`, `log1p_exp` - Unary operations (takes single index)
+/// - `log_add_exp` - Binary stable log-sum-exp (takes two indices)
 ///
 /// # Example
 /// ```
@@ -60,6 +122,10 @@ macro_rules! multi_ops {
     (@op sin) => { $crate::MultiAD::Sin };
     (@op cos) => { $crate::MultiAD::Cos };
     (@op tan) => { $crate::MultiAD::Tan };
+    (@op tanh) => { $crate::MultiAD::Tanh };
+    (@op relu) => { $crate::MultiAD::Relu };
+    (@op log1p_exp) => { $crate::MultiAD::Log1pExp };
+    (@op neg) => { $crate::MultiAD::Neg };
     (@op exp) => { $crate::MultiAD::Exp };
     (@op ln) => { $crate::MultiAD::Ln };
     (@op sqrt) => { $crate::MultiAD::Sqrt };
@@ -70,6 +136,7 @@ macro_rules! multi_ops {
     (@op mul) => { $crate::MultiAD::Mul };
     (@op div) => { $crate::MultiAD::Div };
     (@op pow) => { $crate::MultiAD::Pow };
+    (@op log_add_exp) => { $crate::MultiAD::LogAddExp };
     // Input
     (@op inp) => { $crate::MultiAD::Inp };
     // Error for unknown operations
@@ -78,7 +145,7 @@ macro_rules! multi_ops {
             concat!(
                 "Unsupported operation: ",
                 stringify!($x),
-                ". Use: inp, add, sub, mul, div, pow, sin, cos, tan, exp, ln, sqrt, or abs"
+                ". Use: inp, add, sub, mul, div, pow, log_add_exp, sin, cos, tan, tanh, relu, log1p_exp, neg, exp, ln, sqrt, or abs"
             )
         )
     };

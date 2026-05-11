@@ -45,7 +45,7 @@ pub trait MultiFn {
         }
 
         println!("\nForward pass only:");
-        println!("f({:?}) = {}", &self.inputs(), result);
+        println!("f({:?}) = {}", self.inputs(), result);
 
         // Forward + backward (automatic differentiation)
         let (value, backprop_fn) = self.compute_with_gradients().unwrap();
@@ -54,7 +54,7 @@ pub trait MultiFn {
         }
         let grads = backprop_fn(1.0);
         println!("\nForward + backward (automatic differentiation):");
-        println!("f({:?}) = {}", &self.inputs(), value);
+        println!("f({:?}) = {}", self.inputs(), value);
         for (i, grad) in grads.iter().enumerate() {
             println!("∂f/∂x{} = {}", i + 1, grad);
         }
@@ -62,7 +62,7 @@ pub trait MultiFn {
         // Verify against analytical solution
         let expected_grad = self.expected_gradients();
         println!("\nAnalytical gradients:");
-        println!("∂f/∂x₁, ∂f/∂x₂, ... = {:?}", &expected_grad);
+        println!("∂f/∂x₁, ∂f/∂x₂, ... = {:?}", expected_grad);
 
         println!("\nGradient differences:");
         for (expected, auto) in expected_grad.iter().zip(grads.iter()) {
@@ -74,5 +74,69 @@ pub trait MultiFn {
                 assert!((auto - expected).abs() < 1e-10);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::approx_eq_eps as approx_eq;
+    use std::sync::OnceLock;
+
+    /// f(x, y) = x * y, ∇f = [y, x]
+    struct MulFn;
+
+    impl MultiFn for MulFn {
+        fn inputs(&self) -> Vec<f64> {
+            vec![2.0, 3.0]
+        }
+        fn graph(&self) -> &'static GraphType {
+            static G: OnceLock<Vec<(MultiAD, Vec<usize>)>> = OnceLock::new();
+            G.get_or_init(|| {
+                vec![
+                    (MultiAD::Inp, vec![0]),
+                    (MultiAD::Inp, vec![1]),
+                    (MultiAD::Mul, vec![0, 1]),
+                ]
+            })
+        }
+        fn expected_value(&self) -> f64 {
+            6.0
+        }
+        fn expected_gradients(&self) -> Vec<f64> {
+            vec![3.0, 2.0]
+        }
+    }
+
+    #[test]
+    fn test_multi_fn_compute_with_gradients() {
+        let f = MulFn;
+        let (value, backprop) = f.compute_with_gradients().unwrap();
+        assert!(
+            approx_eq(value, f.expected_value(), 1e-10),
+            "value mismatch"
+        );
+        let grads = backprop(1.0);
+        let expected = f.expected_gradients();
+        for (a, b) in grads.iter().zip(expected.iter()) {
+            assert!((a - b).abs() < 1e-10, "gradient mismatch");
+        }
+    }
+
+    #[test]
+    fn test_multi_fn_demonstrate_with_assert() {
+        MulFn.demonstrate(true);
+    }
+
+    #[test]
+    fn test_multi_fn_demonstrate_without_assert() {
+        MulFn.demonstrate(false);
+    }
+
+    #[test]
+    fn test_multi_fn_compute_forward_only() {
+        let f = MulFn;
+        let result = f.compute().unwrap();
+        assert!((result - f.expected_value()).abs() < 1e-10);
     }
 }

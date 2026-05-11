@@ -2,7 +2,11 @@
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use petite_ad::{mono_ops, types::MonoGradientFn, types::MultiGradientFn, MonoAD, MultiAD};
+use petite_ad::{
+    mono_ops, types::MonoGradientFn, types::MultiGradientFn, BackendKind, BatchGradientsBuffer,
+    BatchInputs, BatchValuesBuffer, ExecutionBackend, ForwardAD, Graph, MonoAD, MultiAD,
+    SimdBackend,
+};
 
 fn bench_single_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("single_operation");
@@ -113,6 +117,44 @@ fn bench_macro_usage(c: &mut Criterion) {
             );
             std::hint::black_box(value);
             std::hint::black_box(backprop(1.0));
+        })
+    });
+
+    group.finish();
+}
+
+fn bench_mono_checked(c: &mut Criterion) {
+    let mut group = c.benchmark_group("mono_checked");
+    let exprs = mono_ops![sqrt, ln, exp];
+    let x = 4.0;
+
+    group.bench_function("compute_checked", |b| {
+        b.iter(|| {
+            let value =
+                MonoAD::compute_checked(std::hint::black_box(&exprs), std::hint::black_box(x))
+                    .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    group.bench_function("compute_grad_checked", |b| {
+        b.iter(|| {
+            let (value, backprop) =
+                MonoAD::compute_grad_checked(std::hint::black_box(&exprs), std::hint::black_box(x))
+                    .unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(backprop(1.0));
+        })
+    });
+
+    group.bench_function("compute_hessian_checked", |b| {
+        b.iter(|| {
+            let hessian = MonoAD::compute_hessian_checked(
+                std::hint::black_box(&exprs),
+                std::hint::black_box(x),
+            )
+            .unwrap();
+            std::hint::black_box(hessian);
         })
     });
 
@@ -312,15 +354,548 @@ fn bench_multi_graph_complexity(c: &mut Criterion) {
     group.finish();
 }
 
+fn make_reusable_graph() -> Graph {
+    let mut graph = Graph::new(2);
+    let x = graph.input(0);
+    let y = graph.input(1);
+    let sum = graph.add(x, y);
+    let sin_x = graph.sin(x);
+    graph.mul(sum, sin_x);
+    graph
+}
+
+fn make_simd_basic_graph() -> Graph {
+    let mut graph = Graph::new(2);
+    let x = graph.input(0);
+    let y = graph.input(1);
+    let product = graph.mul(x, y);
+    let ratio = graph.div(x, y);
+    let sum = graph.add(product, ratio);
+    let shifted = graph.add_const(sum, 0.25);
+    let root = graph.sqrt(shifted);
+    let exponent = graph.log1p_exp(y);
+    let powered = graph.pow(root, exponent);
+    let mixed = graph.log_add_exp(powered, y);
+    graph.tanh(mixed);
+    graph
+}
+
+fn make_multi_output_graph() -> Graph {
+    let mut graph = Graph::new(2);
+    let x = graph.input(0);
+    let y = graph.input(1);
+    let sum = graph.add(x, y);
+    let product = graph.mul(x, y);
+    let sin_x = graph.sin(x);
+    let out = graph.mul(sum, sin_x);
+    graph.set_outputs(&[sum, product, out]).unwrap();
+    graph
+}
+
+fn make_checked_graph() -> Graph {
+    let mut graph = Graph::new(2);
+    let x = graph.input(0);
+    let y = graph.input(1);
+    let sqrt_x = graph.sqrt(x);
+    let ln_y = graph.ln(y);
+    let ratio = graph.div(sqrt_x, ln_y);
+    graph.set_outputs(&[ratio, sqrt_x, ln_y]).unwrap();
+    graph
+}
+
+fn bench_graph_tape_compute(c: &mut Criterion) {
+    let mut group = c.benchmark_group("graph_tape_compute");
+    let inputs = [0.6, 1.4];
+    let legacy_exprs = &[
+        (MultiAD::Inp, vec![0]),
+        (MultiAD::Inp, vec![1]),
+        (MultiAD::Add, vec![0, 1]),
+        (MultiAD::Sin, vec![0]),
+        (MultiAD::Mul, vec![2, 3]),
+    ];
+    let seed = [1.0, 0.0];
+    let graph = make_reusable_graph();
+    let tape = graph.compile();
+    let compiled = graph.compile_ir().unwrap();
+    let mut workspace = tape.workspace();
+    let mut compiled_workspace = compiled.workspace();
+
+    group.bench_function("legacy_tuple_compute", |b| {
+        b.iter(|| {
+            let value = MultiAD::compute(
+                std::hint::black_box(legacy_exprs),
+                std::hint::black_box(&inputs),
+            )
+            .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    group.bench_function("forward_directional_derivative", |b| {
+        b.iter(|| {
+            let value = ForwardAD::directional_derivative(
+                std::hint::black_box(legacy_exprs),
+                std::hint::black_box(&inputs),
+                std::hint::black_box(&seed),
+            )
+            .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    group.bench_function("graph_compute", |b| {
+        b.iter(|| {
+            let value = graph.compute(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    group.bench_function("tape_compute", |b| {
+        b.iter(|| {
+            let value = tape.compute(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    group.bench_function("tape_compute_workspace", |b| {
+        b.iter(|| {
+            let value = tape
+                .compute_with_workspace(std::hint::black_box(&inputs), &mut workspace)
+                .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    group.bench_function("compiled_compute_workspace", |b| {
+        b.iter(|| {
+            let value = compiled
+                .compute_with_workspace(std::hint::black_box(&inputs), &mut compiled_workspace)
+                .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    let batch_data = [0.6, 1.4, 0.7, 1.3, 0.8, 1.2, 0.9, 1.1];
+    let batch = BatchInputs::new(&batch_data, 4, 2).unwrap();
+    group.bench_function("compiled_compute_batch", |b| {
+        b.iter(|| {
+            let value = compiled.compute_batch(std::hint::black_box(batch)).unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    let mut batch_values_buffer = BatchValuesBuffer::new();
+    group.bench_function("compiled_compute_batch_into", |b| {
+        b.iter(|| {
+            compiled
+                .compute_batch_into(std::hint::black_box(batch), &mut batch_values_buffer)
+                .unwrap();
+            std::hint::black_box(&batch_values_buffer);
+        })
+    });
+
+    group.finish();
+}
+
+fn make_batch_data(batch_size: usize) -> Vec<f64> {
+    let mut data = Vec::with_capacity(batch_size * 2);
+    for row in 0..batch_size {
+        let row_f64 = row as f64;
+        data.push(2.0 + row_f64 * 0.01);
+        data.push(1.0 + row_f64 * 0.005);
+    }
+    data
+}
+
+fn bench_simd_batch_compute(c: &mut Criterion) {
+    let mut group = c.benchmark_group("simd_batch_compute");
+    let graph = make_simd_basic_graph();
+    let compiled = graph.compile_ir().unwrap();
+    let simd = SimdBackend;
+
+    for batch_size in [3_usize, 4, 8, 31, 64] {
+        let batch_data = make_batch_data(batch_size);
+        let batch = BatchInputs::new(&batch_data, batch_size, 2).unwrap();
+
+        let mut scalar_buffer = BatchValuesBuffer::new();
+        group.bench_with_input(
+            BenchmarkId::new("scalar_compute_into", batch_size),
+            &batch,
+            |b, batch| {
+                b.iter(|| {
+                    compiled
+                        .compute_batch_into(std::hint::black_box(*batch), &mut scalar_buffer)
+                        .unwrap();
+                    std::hint::black_box(&scalar_buffer);
+                })
+            },
+        );
+
+        let mut scalar_gradient_buffer = BatchGradientsBuffer::new();
+        group.bench_with_input(
+            BenchmarkId::new("scalar_gradient_into", batch_size),
+            &batch,
+            |b, batch| {
+                b.iter(|| {
+                    compiled
+                        .gradient_batch_into(
+                            std::hint::black_box(*batch),
+                            &mut scalar_gradient_buffer,
+                        )
+                        .unwrap();
+                    std::hint::black_box(&scalar_gradient_buffer);
+                })
+            },
+        );
+
+        let mut auto_buffer = BatchValuesBuffer::new();
+        group.bench_with_input(
+            BenchmarkId::new("auto_compute_into", batch_size),
+            &batch,
+            |b, batch| {
+                b.iter(|| {
+                    compiled
+                        .compute_batch_auto_into(std::hint::black_box(*batch), &mut auto_buffer)
+                        .unwrap();
+                    std::hint::black_box(&auto_buffer);
+                })
+            },
+        );
+
+        let mut auto_gradient_buffer = BatchGradientsBuffer::new();
+        group.bench_with_input(
+            BenchmarkId::new("auto_gradient_into", batch_size),
+            &batch,
+            |b, batch| {
+                b.iter(|| {
+                    compiled
+                        .gradient_batch_auto_into(
+                            std::hint::black_box(*batch),
+                            &mut auto_gradient_buffer,
+                        )
+                        .unwrap();
+                    std::hint::black_box(&auto_gradient_buffer);
+                })
+            },
+        );
+
+        for backend in [BackendKind::SimdF64x2, BackendKind::SimdF64x4] {
+            let report = compiled.backend_support_report(backend).unwrap();
+            if report.can_compute_batch() {
+                let mut values_buffer = BatchValuesBuffer::new();
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{}_compute_into", backend.name()), batch_size),
+                    &batch,
+                    |b, batch| {
+                        b.iter(|| {
+                            backend
+                                .compute_batch(
+                                    std::hint::black_box(&compiled),
+                                    std::hint::black_box(*batch),
+                                    &mut values_buffer,
+                                )
+                                .unwrap();
+                            std::hint::black_box(&values_buffer);
+                        })
+                    },
+                );
+            }
+            if report.can_gradient_batch() {
+                let mut gradients_buffer = BatchGradientsBuffer::new();
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{}_gradient_into", backend.name()), batch_size),
+                    &batch,
+                    |b, batch| {
+                        b.iter(|| {
+                            backend
+                                .gradient_batch(
+                                    std::hint::black_box(&compiled),
+                                    std::hint::black_box(*batch),
+                                    &mut gradients_buffer,
+                                )
+                                .unwrap();
+                            std::hint::black_box(&gradients_buffer);
+                        })
+                    },
+                );
+            }
+        }
+    }
+
+    if simd.capabilities().supports_batch_compute {
+        let batch_data = make_batch_data(64);
+        let batch = BatchInputs::new(&batch_data, 64, 2).unwrap();
+        let mut simd_buffer = BatchValuesBuffer::new();
+        group.bench_function("simd_trait_compute_into/64", |b| {
+            b.iter(|| {
+                simd.compute_batch(std::hint::black_box(&compiled), batch, &mut simd_buffer)
+                    .unwrap();
+                std::hint::black_box(&simd_buffer);
+            })
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_graph_tape_gradient(c: &mut Criterion) {
+    let mut group = c.benchmark_group("graph_tape_gradient");
+    let inputs = [0.6, 1.4];
+    let graph = make_reusable_graph();
+    let tape = graph.compile();
+    let compiled = graph.compile_ir().unwrap();
+    let mut workspace = tape.workspace();
+    let mut compiled_workspace = compiled.workspace();
+
+    group.bench_function("graph_compute_grad", |b| {
+        b.iter(|| {
+            let (value, backprop_fn) = graph.compute_grad(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(backprop_fn(1.0));
+        })
+    });
+
+    group.bench_function("tape_compute_grad", |b| {
+        b.iter(|| {
+            let (value, backprop_fn) = tape.compute_grad(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(backprop_fn(1.0));
+        })
+    });
+
+    group.bench_function("tape_gradient_workspace", |b| {
+        b.iter(|| {
+            let (value, grad) = tape
+                .gradient_with_workspace(std::hint::black_box(&inputs), &mut workspace)
+                .unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(grad);
+        })
+    });
+
+    group.bench_function("compiled_gradient_workspace", |b| {
+        b.iter(|| {
+            let (value, grad) = compiled
+                .gradient_with_workspace(std::hint::black_box(&inputs), &mut compiled_workspace)
+                .unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(grad);
+        })
+    });
+
+    let batch_data = [0.6, 1.4, 0.7, 1.3, 0.8, 1.2, 0.9, 1.1];
+    let batch = BatchInputs::new(&batch_data, 4, 2).unwrap();
+    group.bench_function("compiled_gradient_batch", |b| {
+        b.iter(|| {
+            let value = compiled
+                .gradient_batch(std::hint::black_box(batch))
+                .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    let mut batch_gradients_buffer = BatchGradientsBuffer::new();
+    group.bench_function("compiled_gradient_batch_into", |b| {
+        b.iter(|| {
+            compiled
+                .gradient_batch_into(std::hint::black_box(batch), &mut batch_gradients_buffer)
+                .unwrap();
+            std::hint::black_box(&batch_gradients_buffer);
+        })
+    });
+
+    group.finish();
+}
+
+fn bench_graph_tape_jacobian(c: &mut Criterion) {
+    let mut group = c.benchmark_group("graph_tape_jacobian");
+    let inputs = [0.6, 1.4];
+    let graph = make_multi_output_graph();
+    let tape = graph.compile();
+    let mut workspace = tape.workspace();
+
+    group.bench_function("graph_jacobian", |b| {
+        b.iter(|| {
+            let jacobian = graph.jacobian(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(jacobian);
+        })
+    });
+
+    group.bench_function("tape_jacobian", |b| {
+        b.iter(|| {
+            let jacobian = tape.jacobian(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(jacobian);
+        })
+    });
+
+    group.bench_function("tape_jacobian_workspace", |b| {
+        b.iter(|| {
+            let jacobian = tape
+                .jacobian_with_workspace(std::hint::black_box(&inputs), &mut workspace)
+                .unwrap();
+            std::hint::black_box(jacobian);
+        })
+    });
+
+    group.finish();
+}
+
+fn bench_graph_tape_checked(c: &mut Criterion) {
+    let mut compute_group = c.benchmark_group("graph_tape_checked_compute");
+    let inputs = [4.0, 2.5];
+    let graph = make_checked_graph();
+    let tape = graph.compile();
+    let mut compute_workspace = tape.workspace();
+
+    compute_group.bench_function("graph_compute_checked", |b| {
+        b.iter(|| {
+            let value = graph
+                .compute_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    compute_group.bench_function("tape_compute_checked", |b| {
+        b.iter(|| {
+            let value = tape.compute_checked(std::hint::black_box(&inputs)).unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    compute_group.bench_function("tape_compute_workspace_checked", |b| {
+        b.iter(|| {
+            let value = tape
+                .compute_with_workspace_checked(
+                    std::hint::black_box(&inputs),
+                    &mut compute_workspace,
+                )
+                .unwrap();
+            std::hint::black_box(value);
+        })
+    });
+
+    compute_group.bench_function("graph_compute_many_checked", |b| {
+        b.iter(|| {
+            let values = graph
+                .compute_many_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(values);
+        })
+    });
+
+    compute_group.bench_function("tape_compute_many_checked", |b| {
+        b.iter(|| {
+            let values = tape
+                .compute_many_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(values);
+        })
+    });
+
+    compute_group.bench_function("tape_compute_many_workspace_checked", |b| {
+        b.iter(|| {
+            let values = tape
+                .compute_many_with_workspace_checked(
+                    std::hint::black_box(&inputs),
+                    &mut compute_workspace,
+                )
+                .unwrap();
+            std::hint::black_box(values);
+        })
+    });
+
+    compute_group.finish();
+
+    let mut gradient_group = c.benchmark_group("graph_tape_checked_gradient");
+    let mut gradient_workspace = tape.workspace();
+
+    gradient_group.bench_function("graph_gradient_checked", |b| {
+        b.iter(|| {
+            let (value, grad) = graph
+                .gradient_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(grad);
+        })
+    });
+
+    gradient_group.bench_function("tape_gradient_checked", |b| {
+        b.iter(|| {
+            let (value, grad) = tape
+                .gradient_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(grad);
+        })
+    });
+
+    gradient_group.bench_function("tape_gradient_workspace_checked", |b| {
+        b.iter(|| {
+            let (value, grad) = tape
+                .gradient_with_workspace_checked(
+                    std::hint::black_box(&inputs),
+                    &mut gradient_workspace,
+                )
+                .unwrap();
+            std::hint::black_box(value);
+            std::hint::black_box(grad);
+        })
+    });
+
+    gradient_group.finish();
+
+    let mut jacobian_group = c.benchmark_group("graph_tape_checked_jacobian");
+    let mut jacobian_workspace = tape.workspace();
+
+    jacobian_group.bench_function("graph_jacobian_checked", |b| {
+        b.iter(|| {
+            let jacobian = graph
+                .jacobian_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(jacobian);
+        })
+    });
+
+    jacobian_group.bench_function("tape_jacobian_checked", |b| {
+        b.iter(|| {
+            let jacobian = tape
+                .jacobian_checked(std::hint::black_box(&inputs))
+                .unwrap();
+            std::hint::black_box(jacobian);
+        })
+    });
+
+    jacobian_group.bench_function("tape_jacobian_workspace_checked", |b| {
+        b.iter(|| {
+            let jacobian = tape
+                .jacobian_with_workspace_checked(
+                    std::hint::black_box(&inputs),
+                    &mut jacobian_workspace,
+                )
+                .unwrap();
+            std::hint::black_box(jacobian);
+        })
+    });
+
+    jacobian_group.finish();
+}
+
 criterion_group!(
     benches,
     bench_backprop_execution,
     bench_single_operations,
     bench_chained_operations,
     bench_macro_usage,
+    bench_mono_checked,
     bench_multi_forward_only,
     bench_multi_forward_backward,
     bench_multi_backward_only,
     bench_multi_graph_complexity,
+    bench_graph_tape_compute,
+    bench_simd_batch_compute,
+    bench_graph_tape_gradient,
+    bench_graph_tape_jacobian,
+    bench_graph_tape_checked,
 );
 criterion_main!(benches);

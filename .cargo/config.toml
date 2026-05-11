@@ -1,0 +1,11 @@
+# Cargo configuration for petite-ad.
+#
+# The mold linker flag below speeds up local builds substantially.
+# If mold is not installed, the flag is silently ignored by the linker.
+# Remove or adjust the rustflags if needed for your machine.
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[registries.crates-io]
+protocol = "sparse" # Faster crate downloads

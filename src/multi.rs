@@ -9,13 +9,48 @@ mod f2;
 mod f3;
 
 pub mod builder;
+pub mod compiled;
+pub mod graph;
 mod multi_ad;
+pub mod multi_ad_fr;
+pub mod multi_ad_rf;
+pub mod multi_ad_rr;
+mod parser;
+
+// Shared internal modules for multivariate derivative rules and Hessian computation.
+mod multi_hessian_common;
+pub(crate) mod op_rules;
+
 mod multi_fn;
 #[cfg(test)]
 mod tests;
 pub mod types;
 
+pub use compiled::{
+    AcceleratorDeviceContext, AcceleratorDeviceKind, BackendCapabilities, BackendKind,
+    BackendRejectionReason, BackendSupportReport, BatchGradients, BatchGradientsBuffer,
+    BatchInputs, BatchLayout, BatchValues, BatchValuesBuffer, CompiledGraph, CompiledGraphMetadata,
+    CompiledWorkspace, DeviceBackend, DeviceBatchPlan, DeviceBuffer, DeviceBufferHandle,
+    DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet, DeviceExecutionMode,
+    DeviceExecutionTrace, DeviceMemoryLocation, DeviceTransferKind, DeviceTransferPlan,
+    DeviceTransferPolicy, ExecutionBackend, FlatInstruction, GpuBackendBoundary, Instruction,
+    MockDeviceBackend, OpCode, ScalarBackend, SimdBackend, UNUSED_NODE_ID,
+};
+#[cfg(feature = "backend-wgpu")]
+pub use compiled::{
+    WgpuBackend, WgpuBuffer, WgpuBufferSet, WGPU_NATIVE_BATCH_COMPUTE_EXACT_SAFE_OPCODES,
+};
+pub use graph::{
+    DomainPolicy, ExprGraph, ExprNode, GradientCheckEntry, GradientCheckReport, Graph, GraphNode,
+    GraphStats, NodeId, Tape, TapeWorkspace,
+};
 pub use multi_ad::MultiAD;
-// Re-export trait for library extension - users can implement custom multi-variable functions
-#[allow(unused_imports)] // May not be used internally, but part of public API
 pub use multi_fn::MultiFn;
+
+// Re-exported at crate root via lib.rs — suppress unused-import warnings in this module
+#[allow(unused_imports)]
+pub use multi_ad_fr::MultiAD2FR;
+#[allow(unused_imports)]
+pub use multi_ad_rf::MultiAD2RF;
+#[allow(unused_imports)]
+pub use multi_ad_rr::MultiAD2RR;

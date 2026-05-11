@@ -1,0 +1,104 @@
+name: CI
+
+on:
+    push:
+        branches: [main, master, develop]
+    pull_request:
+        branches: [main, master]
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                rust: [stable, nightly]
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup mold linker
+              uses: rui314/setup-mold@v1
+
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: ${{ matrix.rust }}
+                  components: rustfmt, clippy
+
+            - name: Setup Rust cache
+              uses: Swatinem/rust-cache@v2
+              with:
+                  key: ${{ matrix.rust }}
+
+            - name: Check formatting
+              run: cargo fmt -- --check
+
+            - name: Run clippy
+              run: cargo clippy --all-targets --all-features -- -D warnings
+
+            - name: Run tests
+              run: cargo test --verbose --all-features
+
+            - name: Run examples
+              run: cargo test --examples --all-features
+
+            - name: Run benchmarks (check only)
+              run: cargo bench --no-run
+
+    coverage:
+        name: Code Coverage
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup mold linker
+              uses: rui314/setup-mold@v1
+
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: stable
+
+            - name: Setup Rust cache
+              uses: Swatinem/rust-cache@v2
+
+            - name: Install cargo-tarpaulin
+              run: cargo install cargo-tarpaulin
+
+            - name: Generate coverage report
+              run: cargo tarpaulin --lib --out Xml
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  file: ./cobertura.xml
+                  fail_ci_if_error: false
+
+    security:
+        name: Security audit
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup mold linker
+              uses: rui314/setup-mold@v1
+
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: stable
+
+            - name: Install cargo-audit
+              run: cargo install cargo-audit
+
+            - name: Generate temporary lockfile
+              run: cargo generate-lockfile
+
+            - name: Run security audit
+              run: cargo audit

@@ -389,3 +389,145 @@ fn test_sqrt_and_mul_chain() {
     assert!(approx_eq(grads[0], 5.0 / (2.0 * 16.0_f64.sqrt()), 1e-10));
     assert!(approx_eq(grads[1], 4.0, 1e-10));
 }
+
+#[test]
+fn test_hessian_quadratic() {
+    // Test f(x, y) = x² + y²
+    // Hessian is [[2, 0], [0, 2]]
+    let exprs = &multi_ops![(inp, 0), (inp, 1), (mul, 0, 0), (mul, 1, 1), (add, 2, 3)];
+    let inputs = &[2.0, 3.0];
+
+    let hessian = MultiAD::compute_hessian(exprs, inputs).unwrap();
+
+    assert_eq!(hessian.len(), 2);
+    assert_eq!(hessian[0].len(), 2);
+    assert_eq!(hessian[1].len(), 2);
+
+    // ∂²f/∂x² = 2, ∂²f/∂x∂y = 0, ∂²f/∂y∂x = 0, ∂²f/∂y² = 2
+    // Using 1e-6 tolerance for finite difference approximation
+    assert!(approx_eq(hessian[0][0], 2.0, 1e-6));
+    assert!(approx_eq(hessian[0][1], 0.0, 1e-6));
+    assert!(approx_eq(hessian[1][0], 0.0, 1e-6));
+    assert!(approx_eq(hessian[1][1], 2.0, 1e-6));
+}
+
+#[test]
+fn test_hessian_exp_sin() {
+    // Test f(x) = exp(sin(x))
+    // First derivative: f'(x) = exp(sin(x)) * cos(x)
+    // Second derivative: f''(x) = exp(sin(x)) * cos²(x) - exp(sin(x)) * sin(x)
+    let exprs = &multi_ops![(inp, 0), (sin, 0), (exp, 1)];
+    let x = 0.5;
+    let inputs = &[x];
+    let hessian = MultiAD::compute_hessian(exprs, inputs).unwrap();
+
+    let expected_hessian = x.sin().exp() * x.cos().powi(2) - x.sin().exp() * x.sin();
+    // Using 1e-4 tolerance for finite difference approximation
+    assert!(approx_eq(hessian[0][0], expected_hessian, 1e-4));
+}
+
+#[test]
+fn test_hessian_complex_function() {
+    // Test f(x, y) = sin(x) * (x + y)
+    let exprs = &multi_ops![(inp, 0), (inp, 1), (add, 0, 1), (sin, 0), (mul, 2, 3)];
+    let x = 0.6;
+    let y = 1.4;
+    let inputs = &[x, y];
+    let hessian = MultiAD::compute_hessian(exprs, inputs).unwrap();
+
+    // Analytical second derivatives:
+    // f(x, y) = sin(x) * (x + y)
+    // ∂f/∂x = cos(x) * (x + y) + sin(x)
+    // ∂f/∂y = sin(x)
+    // ∂²f/∂x² = -sin(x) * (x + y) + cos(x) + cos(x) = -sin(x) * (x + y) + 2*cos(x)
+    // ∂²f/∂x∂y = cos(x)
+    // ∂²f/∂y∂x = cos(x)
+    // ∂²f/∂y² = 0
+
+    let expected_dxx = -x.sin() * (x + y) + 2.0 * x.cos();
+    let expected_dxy = x.cos();
+    let expected_dyx = x.cos();
+    let expected_dyy = 0.0;
+
+    // Using 1e-4 tolerance for finite difference approximation
+    assert!(approx_eq(hessian[0][0], expected_dxx, 1e-4));
+    assert!(approx_eq(hessian[0][1], expected_dxy, 1e-4));
+    assert!(approx_eq(hessian[1][0], expected_dyx, 1e-4));
+    assert!(approx_eq(hessian[1][1], expected_dyy, 1e-4));
+}
+
+#[test]
+fn test_hessian_single_variable() {
+    // Test f(x) = x³
+    // Hessian is [[6x]]
+    let exprs = &multi_ops![(inp, 0), (mul, 0, 0), (mul, 1, 0)];
+    let x = 3.0;
+    let inputs = &[x];
+
+    let hessian = MultiAD::compute_hessian(exprs, inputs).unwrap();
+
+    // f''(x) = 6x = 18
+    // Using 1e-4 tolerance for finite difference approximation (higher for second derivatives)
+    assert_eq!(hessian.len(), 1);
+    assert_eq!(hessian[0].len(), 1);
+    assert!(approx_eq(hessian[0][0], 18.0, 1e-4));
+}
+
+#[test]
+fn test_hessian_quadratic_form() {
+    // Test f(x, y, z) = x² + xy + y² + yz + z²
+    // Hessian is [[2, 1, 0], [1, 2, 1], [0, 1, 2]]
+    let exprs = &multi_ops![
+        (inp, 0),
+        (inp, 1),
+        (inp, 2),
+        (mul, 0, 0),
+        (mul, 0, 1),
+        (mul, 1, 1),
+        (mul, 1, 2),
+        (mul, 2, 2),
+        (add, 3, 4),
+        (add, 5, 6),
+        (add, 7, 8),
+        (add, 9, 10)
+    ];
+    let inputs = &[1.0, 2.0, 3.0];
+    let hessian = MultiAD::compute_hessian(exprs, inputs).unwrap();
+
+    assert_eq!(hessian.len(), 3);
+    assert_eq!(hessian[0].len(), 3);
+    assert_eq!(hessian[1].len(), 3);
+    assert_eq!(hessian[2].len(), 3);
+
+    // Row 0: [2, 1, 0]
+    assert!(approx_eq(hessian[0][0], 2.0, 1e-6));
+    assert!(approx_eq(hessian[0][1], 1.0, 1e-6));
+    assert!(approx_eq(hessian[0][2], 0.0, 1e-6));
+
+    // Row 1: [1, 2, 1]
+    assert!(approx_eq(hessian[1][0], 1.0, 1e-6));
+    assert!(approx_eq(hessian[1][1], 2.0, 1e-6));
+    assert!(approx_eq(hessian[1][2], 1.0, 1e-6));
+
+    // Row 2: [0, 1, 2]
+    assert!(approx_eq(hessian[2][0], 0.0, 1e-6));
+    assert!(approx_eq(hessian[2][1], 1.0, 1e-6));
+    assert!(approx_eq(hessian[2][2], 2.0, 1e-6));
+}
+
+#[test]
+fn test_hessian_row() {
+    // Test compute_hessian_row function
+    let exprs = &multi_ops![(inp, 0), (inp, 1), (mul, 0, 0), (mul, 1, 1), (add, 2, 3)];
+    let inputs = &[2.0, 3.0];
+
+    // Test first row (derivatives of ∂f/∂x)
+    let row0 = MultiAD::compute_hessian_row(exprs, inputs, 0).unwrap();
+    assert!(approx_eq(row0[0], 2.0, 1e-6));
+    assert!(approx_eq(row0[1], 0.0, 1e-6));
+
+    // Test second row (derivatives of ∂f/∂y)
+    let row1 = MultiAD::compute_hessian_row(exprs, inputs, 1).unwrap();
+    assert!(approx_eq(row1[0], 0.0, 1e-6));
+    assert!(approx_eq(row1[1], 2.0, 1e-6));
+}
