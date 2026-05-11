@@ -3,8 +3,6 @@
 //! This module provides functionality for computing gradients of
 //! multi-variable functions using computational graphs.
 
-#![allow(unused_imports)] // Re-exports used via lib.rs re-export path
-                          // Example implementations - not part of public API
 mod f1;
 mod f2;
 mod f3;
@@ -55,6 +53,9 @@ pub use multi_ad::MultiAD;
 pub use multi_fn::MultiFn;
 pub use tape::{Tape, TapeWorkspace};
 
+#[allow(unused_imports)] // Used via lib.rs re-export path
 pub use multi_ad_fr::MultiAD2FR;
+#[allow(unused_imports)] // Used via lib.rs re-export path
 pub use multi_ad_rf::MultiAD2RF;
+#[allow(unused_imports)] // Used via lib.rs re-export path
 pub use multi_ad_rr::MultiAD2RR;

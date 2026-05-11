@@ -1,8 +1,8 @@
 //! Mock device-style backend that executes on CPU while using device-oriented plans.
 
 use crate::multi::backend::device::{
-    DeviceBackend, DeviceBatchPlan, DeviceBufferKind, DeviceBufferSet, DeviceExecutionMode,
-    DeviceExecutionTrace, DeviceTransferKind,
+    DeviceBackend, DeviceBufferKind, DeviceBufferSet, DeviceExecutionMode, DeviceExecutionTrace,
+    DeviceTransferKind,
 };
 use crate::multi::backend::dispatch::{BackendKind, ExecutionBackend};
 use crate::multi::backend::scalar::ScalarBackend;

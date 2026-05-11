@@ -19,7 +19,7 @@ use crate::multi::backend::dispatch::{BackendKind, ExecutionBackend};
 #[cfg(feature = "backend-wgpu")]
 use crate::multi::backend::scalar::ScalarBackend;
 #[cfg(feature = "backend-wgpu")]
-use crate::multi::backend::types::{BackendCapabilities, FlatInstruction, OpCode, UNUSED_NODE_ID};
+use crate::multi::backend::types::{BackendCapabilities, OpCode, UNUSED_NODE_ID};
 #[cfg(feature = "backend-wgpu")]
 use crate::multi::compiled::{BatchGradientsBuffer, BatchInputs, BatchValuesBuffer, CompiledGraph};
 #[cfg(feature = "backend-wgpu")]

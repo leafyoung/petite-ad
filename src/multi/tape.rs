@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use super::graph::{Graph, GraphNode, NodeId};
+use super::graph::{Graph, NodeId};
 use super::multi_ad::MultiAD;
 use super::op_rules;
 use super::types::BackwardResultBox;

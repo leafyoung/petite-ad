@@ -1,17 +1,19 @@
 //! Closure-free compiled instruction IR for acceleration-ready graph execution.
 
-use super::multi_ad::MultiAD;
 use super::op_rules;
 use crate::{AutodiffError, NodeId, Result};
 
 use super::backend::{
     BackendCapabilities, BackendKind, BackendRejectionReason, BackendSupportReport, DeviceBackend,
-    DeviceBatchPlan, DeviceBufferKind, DeviceBufferSet, DeviceExecutionTrace, DeviceMemoryLocation,
-    ExecutionBackend, FlatInstruction, Instruction, MockDeviceBackend, OpCode, ScalarBackend,
-    SimdBackend, UNUSED_NODE_ID,
+    DeviceBatchPlan, DeviceBufferSet, DeviceExecutionTrace, FlatInstruction, Instruction,
+    MockDeviceBackend, OpCode, UNUSED_NODE_ID,
 };
+#[cfg(test)]
+use super::backend::{DeviceBufferKind, DeviceMemoryLocation};
 #[cfg(feature = "backend-wgpu")]
 use super::backend::{WgpuBackend, WgpuBufferSet};
+#[cfg(test)]
+use super::multi_ad::MultiAD;
 
 /// Flat row-major batch input view.
 #[derive(Debug, Clone, Copy, PartialEq)]

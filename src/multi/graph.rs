@@ -43,13 +43,16 @@ use super::compiled::{
     BatchGradients, BatchGradientsBuffer, BatchInputs, BatchValues, BatchValuesBuffer,
     CompiledGraph, CompiledGraphMetadata, CompiledWorkspace,
 };
-use super::expr::{ExprGraph, ExprNode};
+#[cfg(test)]
+use super::expr::ExprGraph;
 use super::multi_ad::MultiAD;
 use super::multi_ad_fr::MultiAD2FR;
 use super::multi_ad_rf::MultiAD2RF;
 use super::op_rules;
 use super::parser;
-use super::tape::{CompiledArgRange, CompiledNode, Tape, TapeWorkspace};
+#[cfg(test)]
+use super::tape::TapeWorkspace;
+use super::tape::{CompiledArgRange, CompiledNode, Tape};
 use super::types::BackwardResultBox;
 use crate::{AutodiffError, Result};
 
