@@ -16,10 +16,45 @@ keywords = [
 ]
 categories = ["algorithms", "mathematics", "science"]
 
+[features]
+default = []
+serde = ["dep:serde"]
+backend-wgpu = ["dep:pollster", "dep:wgpu"]
+
 [dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+pollster = { version = "0.4", optional = true }
+wgpu = { version = "25", optional = true }
 
 [dev-dependencies]
-criterion = "0.8.1"
+criterion = { version = "0.8.1", default-features = false }
+serde_json = "1.0"
+
+[profile.release]
+# Optimize for speed and binary size
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+# Faster debug builds
+codegen-units = 16
+lto = false
+opt-level = 0
+incremental = true
+
+[profile.test]
+# Fast test builds with some optimizations
+codegen-units = 16
+opt-level = 1
+lto = false
+
+[profile.bench]
+# Maximum performance for benchmarks
+inherits = "release"
+debug = true
 
 [[bench]]
 name = "compute_benchmark"

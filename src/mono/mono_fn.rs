@@ -67,7 +67,7 @@ pub trait MonoFn {
             assert!((result - self.expected_value()).abs() < 1e-10);
         }
         println!("\nForward pass only:");
-        println!("f({:?}) = {}", &self.input(), result);
+        println!("f({:?}) = {}", self.input(), result);
 
         // Forward + backward (automatic differentiation)
         let (value, backprop_fn) = self.compute_with_gradient();
@@ -76,13 +76,13 @@ pub trait MonoFn {
         }
         let grad = backprop_fn(1.0);
         println!("\nForward + backward (automatic differentiation):");
-        println!("f({:?}) = {}", &self.input(), value);
+        println!("f({:?}) = {}", self.input(), value);
         println!("∂f/∂x = {}", grad);
 
         // Verify against analytical solution
         let expected_grad = self.expected_gradient();
         println!("\nAnalytical gradients:");
-        println!("∂f/∂x = {:?}", &expected_grad);
+        println!("∂f/∂x = {:?}", expected_grad);
 
         println!("\nGradient differences:");
         println!(
@@ -92,5 +92,70 @@ pub trait MonoFn {
         if with_assert {
             assert!((grad - expected_grad).abs() < 1e-10);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::approx_eq_eps as approx_eq;
+
+    /// f(x) = exp(sin(x)), f'(x) = exp(sin(x)) * cos(x)
+    struct SinExpFn;
+
+    impl MonoFn for SinExpFn {
+        fn input(&self) -> f64 {
+            0.5
+        }
+        fn graph(&self) -> &'static GraphType {
+            static G: [MonoAD; 2] = [MonoAD::Sin, MonoAD::Exp];
+            &G
+        }
+        fn expected_value(&self) -> f64 {
+            0.5_f64.sin().exp()
+        }
+        fn expected_gradient(&self) -> f64 {
+            0.5_f64.sin().exp() * 0.5_f64.cos()
+        }
+    }
+
+    #[test]
+    fn test_mono_fn_compute() {
+        let f = SinExpFn;
+        let value = f.compute();
+        assert!(
+            approx_eq(value, f.expected_value(), 1e-10),
+            "compute value mismatch"
+        );
+    }
+
+    #[test]
+    fn test_mono_fn_compute_with_gradient() {
+        let f = SinExpFn;
+        let (value, backprop) = f.compute_with_gradient();
+        assert!(
+            approx_eq(value, f.expected_value(), 1e-10),
+            "value mismatch"
+        );
+        let grad = backprop(1.0);
+        assert!(
+            approx_eq(grad, f.expected_gradient(), 1e-10),
+            "gradient mismatch"
+        );
+    }
+
+    #[test]
+    fn test_mono_fn_test_mono_ad() {
+        SinExpFn.test_mono_ad();
+    }
+
+    #[test]
+    fn test_mono_fn_demonstrate_with_assert() {
+        SinExpFn.demonstrate(true);
+    }
+
+    #[test]
+    fn test_mono_fn_demonstrate_without_assert() {
+        SinExpFn.demonstrate(false);
     }
 }

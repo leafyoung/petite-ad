@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>petite-ad WASM demo sketch</title>
+</head>
+<body>
+  <h1>petite-ad WASM demo sketch</h1>
+  <p>
+    This static file documents the intended browser demo shape: compile a small
+    wrapper crate with <code>wasm-bindgen</code>, expose graph construction and
+    <code>to_mermaid()</code>, then render the Mermaid text in the browser.
+  </p>
+  <pre id="graph">flowchart LR
+    n0["x: Input 0"]
+    n1["y: Input 1"]
+    n0 --> n2["Mul"]
+    n1 --> n2
+  </pre>
+</body>
+</html>

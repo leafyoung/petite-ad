@@ -1,65 +1,61 @@
-# Pre-commit hooks for Rust project
+# Pre-commit hooks for petite-ad
 # See https://pre-commit.com for more information
-# Run `pre-commit install` to install these hooks
+# Install: pip install pre-commit
+# Setup: pre-commit install
+# Run manually: prek run --all-files  # alias for: pre-commit run --all-files
 
 repos:
-  # General hooks
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-toml
-      - id: check-added-large-files
-        args: ['--maxkb=1000']
-      - id: check-merge-conflict
-      - id: check-case-conflict
-      - id: mixed-line-ending
-        args: ['--fix=lf']
-
-  # Rust specific hooks using local cargo commands
   - repo: local
     hooks:
+      # Run cargo fmt to automatically format Rust files.
       - id: cargo-fmt
         name: cargo fmt
         entry: cargo fmt
         language: system
+        types: [rust]
         pass_filenames: false
 
-      - id: cargo-check
-        name: cargo check
-        entry: cargo check
-        language: system
-        args: ['--all-targets', '--all-features']
-        pass_filenames: false
-
-  # Clippy linting
-  - repo: local
-    hooks:
-      - id: clippy
+      # Run cargo clippy to catch common mistakes.
+      - id: cargo-clippy
         name: cargo clippy
-        entry: cargo clippy
+        entry: cargo clippy --all-targets --all-features -- -D warnings
         language: system
-        args: ['--all-targets', '--all-features', '--', '-D', 'warnings']
+        types: [rust]
         pass_filenames: false
 
-  # Run tests
-  - repo: local
-    hooks:
+      # Run cargo test to ensure all tests pass.
       - id: cargo-test
         name: cargo test
-        entry: cargo test
+        entry: cargo test --all-features
         language: system
-        args: ['--all-features']
+        types: [rust]
         pass_filenames: false
 
-  # Check documentation
-  - repo: local
+  # Generic pre-commit hooks for non-Rust files.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
     hooks:
-      - id: cargo-doc
-        name: cargo doc
-        entry: cargo doc
-        language: system
-        args: ['--no-deps', '--all-features']
-        pass_filenames: false
+      # Check for accidentally committed large files.
+      - id: check-added-large-files
+        args: ["--maxkb=10000"]
+
+      # Check config file syntax.
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+
+      # Fix whitespace-only file hygiene issues.
+      - id: trailing-whitespace
+        exclude: ^(tests/|fixtures/)
+      - id: end-of-file-fixer
+
+      # Detect conflict markers and case-insensitive path collisions.
+      - id: check-merge-conflict
+      - id: check-case-conflict
+
+      # Normalize line endings.
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+      # Check that scripts with shebangs are executable.
+      - id: check-executables-have-shebangs
