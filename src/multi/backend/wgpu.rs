@@ -111,7 +111,7 @@ fn wgpu_buffer_size_bytes(len: usize) -> u64 {
 fn encode_f64_slice(data: &[f64]) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(data.len().saturating_mul(std::mem::size_of::<f64>()));
     for value in data {
-        bytes.extend_from_slice(&value.to_ne_bytes());
+        bytes.extend_from_slice(&value.to_le_bytes());
     }
     bytes
 }
@@ -128,7 +128,7 @@ fn decode_f64_bytes(bytes: &[u8], len: usize) -> Result<Vec<f64>> {
     for chunk in bytes[..expected_len].chunks_exact(std::mem::size_of::<f64>()) {
         let mut array = [0_u8; std::mem::size_of::<f64>()];
         array.copy_from_slice(chunk);
-        values.push(f64::from_ne_bytes(array));
+        values.push(f64::from_le_bytes(array));
     }
     Ok(values)
 }
@@ -144,7 +144,7 @@ fn wgpu_buffer_size_bytes_f32(len: usize) -> u64 {
 fn encode_f32_slice(data: &[f32]) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(data.len().saturating_mul(std::mem::size_of::<f32>()));
     for value in data {
-        bytes.extend_from_slice(&value.to_ne_bytes());
+        bytes.extend_from_slice(&value.to_le_bytes());
     }
     bytes
 }
@@ -161,7 +161,7 @@ fn decode_f32_bytes(bytes: &[u8], len: usize) -> Result<Vec<f32>> {
     for chunk in bytes[..expected_len].chunks_exact(std::mem::size_of::<f32>()) {
         let mut array = [0_u8; std::mem::size_of::<f32>()];
         array.copy_from_slice(chunk);
-        values.push(f32::from_ne_bytes(array));
+        values.push(f32::from_le_bytes(array));
     }
     Ok(values)
 }
@@ -170,7 +170,7 @@ fn decode_f32_bytes(bytes: &[u8], len: usize) -> Result<Vec<f32>> {
 fn encode_u32_slice(data: &[u32]) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(data.len().saturating_mul(std::mem::size_of::<u32>()));
     for value in data {
-        bytes.extend_from_slice(&value.to_ne_bytes());
+        bytes.extend_from_slice(&value.to_le_bytes());
     }
     bytes
 }
