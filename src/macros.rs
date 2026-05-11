@@ -1,3 +1,10 @@
+//! Convenience macros for building single-variable and multi-variable
+//! computational graphs concisely.
+//!
+//! - [`mono_ops!`] — Build a `[MonoAD; N]` array of unary operations (sin, cos, tan, exp, etc.).
+//! - [`multi_ops!`] — Build a `[(MultiAD, Vec<usize>); N]` array of multi-variable operations
+//!   with input variable markers.
+
 /// Macro to convert function names to MonoAD enum at compile time.
 /// This avoids the function pointer comparison issue across library boundaries.
 ///

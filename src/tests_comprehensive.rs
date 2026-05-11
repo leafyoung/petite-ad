@@ -628,19 +628,6 @@ fn test_dual_constant() {
 }
 
 // ============================================================================
-// MonoFn Trait Tests - covered in mono::tests module
-// since MF1-4 are private implementation details
-
-// ============================================================================
-// MultiFn Trait Tests
-// ============================================================================
-
-// Note: F1, F2, F3 are private modules, tested through multi::tests
-
-// MultiFn trait tests are covered in multi::tests module
-// since F1, F2, F3 are private implementation details
-
-// ============================================================================
 // Arity Error Tests
 // ============================================================================
 
