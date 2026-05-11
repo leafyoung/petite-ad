@@ -145,17 +145,16 @@ pub use mono::MonoAD;
 pub use mono::{MonoAD2FR, MonoAD2RF, MonoAD2RR};
 
 pub use multi::{
-    builder::GraphBuilder, multi_ad_fr::MultiAD2FR, multi_ad_rf::MultiAD2RF,
-    multi_ad_rr::MultiAD2RR, AcceleratorDeviceContext, AcceleratorDeviceKind, BackendCapabilities,
-    BackendKind, BackendRejectionReason, BackendSupportReport, BatchGradients,
-    BatchGradientsBuffer, BatchInputs, BatchLayout, BatchValues, BatchValuesBuffer, CompiledGraph,
-    CompiledGraphMetadata, CompiledWorkspace, DeviceBackend, DeviceBatchPlan, DeviceBuffer,
-    DeviceBufferHandle, DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet, DeviceExecutionMode,
+    AcceleratorDeviceContext, AcceleratorDeviceKind, BackendCapabilities, BackendKind,
+    BackendRejectionReason, BackendSupportReport, BatchGradients, BatchGradientsBuffer,
+    BatchInputs, BatchLayout, BatchValues, BatchValuesBuffer, CompiledGraph, CompiledGraphMetadata,
+    CompiledWorkspace, DeviceBackend, DeviceBatchPlan, DeviceBuffer, DeviceBufferHandle,
+    DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet, DeviceExecutionMode,
     DeviceExecutionTrace, DeviceMemoryLocation, DeviceTransferKind, DeviceTransferPlan,
     DeviceTransferPolicy, DomainPolicy, ExecutionBackend, ExprGraph, ExprNode, FlatInstruction,
-    GpuBackendBoundary, GradientCheckEntry, GradientCheckReport, Graph, GraphNode, GraphStats,
-    Instruction, MockDeviceBackend, MultiAD, NodeId, OpCode, ScalarBackend, SimdBackend, Tape,
-    TapeWorkspace, UNUSED_NODE_ID,
+    GpuBackendBoundary, GradientCheckEntry, GradientCheckReport, Graph, GraphBuilder, GraphNode,
+    GraphStats, Instruction, MockDeviceBackend, MultiAD, MultiAD2FR, MultiAD2RF, MultiAD2RR,
+    NodeId, OpCode, ScalarBackend, SimdBackend, Tape, TapeWorkspace, UNUSED_NODE_ID,
 };
 #[cfg(feature = "backend-wgpu")]
 pub use multi::{
