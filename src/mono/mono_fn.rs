@@ -2,7 +2,6 @@ pub use super::mono_ad::MonoAD;
 pub use super::types::BackwardResultBox;
 
 /// Type alias for a graph of mono operations (slice of MonoAD)
-#[allow(dead_code)] // Public API for library extension
 pub type GraphType = [MonoAD];
 
 /// Trait for single-variable functions with analytical gradients.
@@ -12,7 +11,6 @@ pub type GraphType = [MonoAD];
 ///
 /// This trait is primarily intended for testing and demonstration purposes.
 /// Most users will work directly with the `MonoAD` enum.
-#[allow(dead_code)] // Public API for library extension
 pub trait MonoFn {
     /// Returns the input value for this function.
     fn input(&self) -> f64;

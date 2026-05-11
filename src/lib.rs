@@ -144,21 +144,17 @@ pub use mono::MonoAD;
 // Higher-order autodiff methods (exact Hessian computation)
 pub use mono::{MonoAD2FR, MonoAD2RF, MonoAD2RR};
 
-pub use multi::builder::GraphBuilder;
-pub use multi::multi_ad_fr::MultiAD2FR;
-pub use multi::multi_ad_rf::MultiAD2RF;
-pub use multi::multi_ad_rr::MultiAD2RR;
-pub use multi::MultiAD;
 pub use multi::{
-    AcceleratorDeviceContext, AcceleratorDeviceKind, BackendCapabilities, BackendKind,
-    BackendRejectionReason, BackendSupportReport, BatchGradients, BatchGradientsBuffer,
-    BatchInputs, BatchLayout, BatchValues, BatchValuesBuffer, CompiledGraph, CompiledGraphMetadata,
-    CompiledWorkspace, DeviceBackend, DeviceBatchPlan, DeviceBuffer, DeviceBufferHandle,
-    DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet, DeviceExecutionMode,
+    builder::GraphBuilder, multi_ad_fr::MultiAD2FR, multi_ad_rf::MultiAD2RF,
+    multi_ad_rr::MultiAD2RR, AcceleratorDeviceContext, AcceleratorDeviceKind, BackendCapabilities,
+    BackendKind, BackendRejectionReason, BackendSupportReport, BatchGradients,
+    BatchGradientsBuffer, BatchInputs, BatchLayout, BatchValues, BatchValuesBuffer, CompiledGraph,
+    CompiledGraphMetadata, CompiledWorkspace, DeviceBackend, DeviceBatchPlan, DeviceBuffer,
+    DeviceBufferHandle, DeviceBufferKind, DeviceBufferLayout, DeviceBufferSet, DeviceExecutionMode,
     DeviceExecutionTrace, DeviceMemoryLocation, DeviceTransferKind, DeviceTransferPlan,
     DeviceTransferPolicy, DomainPolicy, ExecutionBackend, ExprGraph, ExprNode, FlatInstruction,
     GpuBackendBoundary, GradientCheckEntry, GradientCheckReport, Graph, GraphNode, GraphStats,
-    Instruction, MockDeviceBackend, NodeId, OpCode, ScalarBackend, SimdBackend, Tape,
+    Instruction, MockDeviceBackend, MultiAD, NodeId, OpCode, ScalarBackend, SimdBackend, Tape,
     TapeWorkspace, UNUSED_NODE_ID,
 };
 #[cfg(feature = "backend-wgpu")]

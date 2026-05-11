@@ -42,7 +42,6 @@ use super::multi_ad::MultiAD;
 #[derive(Debug, Clone)]
 pub struct GraphBuilder {
     /// Number of input variables
-    #[allow(dead_code)]
     num_inputs: usize,
     /// Operations in the legacy tuple computation graph
     operations: Vec<(MultiAD, Vec<usize>)>,

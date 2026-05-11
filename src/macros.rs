@@ -1,3 +1,9 @@
+//! Convenience macros for building single-variable and multi-variable
+//! computational graphs concisely.
+//!
+//! - [`mono_ops!`] — Build a `Vec<MonoAD>` expression with sinusoidal, exp, ln, sqrt, etc.
+//! - [`multi_ops!`] — Build a `Vec<(MultiAD, Vec<usize>)>` tuple graph with input markers.
+
 /// Macro to convert function names to MonoAD enum at compile time.
 /// This avoids the function pointer comparison issue across library boundaries.
 ///

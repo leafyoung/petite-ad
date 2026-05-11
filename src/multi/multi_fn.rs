@@ -3,7 +3,6 @@ pub use super::types::BackwardResultBox;
 use crate::error::Result;
 
 /// Type alias for a multi-variable computation graph
-#[allow(dead_code)] // Public API for library extension
 pub type GraphType = [(MultiAD, Vec<usize>)];
 
 /// Trait for multi-variable functions with analytical gradients.
@@ -13,7 +12,6 @@ pub type GraphType = [(MultiAD, Vec<usize>)];
 ///
 /// This trait is primarily intended for testing and demonstration purposes.
 /// Most users will work directly with the `MultiAD` enum.
-#[allow(dead_code)] // Public API for library extension
 pub trait MultiFn {
     /// Returns the input values for this function.
     fn inputs(&self) -> Vec<f64>;
